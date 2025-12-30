@@ -39,10 +39,15 @@ fun WebViewContainer(
         onSslSecureChanged: (Boolean) -> Unit,
         onNavigate: (String) -> Unit,
         onOpenSettings: () -> Unit,
+        navigationActions:
+                kotlinx.coroutines.flow.SharedFlow<
+                        com.oneatom.onebrowser.viewmodel.NavigationAction>? =
+                null,
         modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val backgroundColor = if (isDarkTheme) DarkBackground else LightBackground
+    val currentTabId = tab.id
 
     // Remember webview for this tab
     val webView =
@@ -230,6 +235,34 @@ fun WebViewContainer(
                             }
                 }
             }
+
+    // Listen for navigation events
+    LaunchedEffect(currentTabId) {
+        navigationActions?.collect { action ->
+            when (action) {
+                is com.oneatom.onebrowser.viewmodel.NavigationAction.GoBack -> {
+                    if (action.tabId == currentTabId) {
+                        if (webView.canGoBack()) webView.goBack()
+                    }
+                }
+                is com.oneatom.onebrowser.viewmodel.NavigationAction.GoForward -> {
+                    if (action.tabId == currentTabId) {
+                        if (webView.canGoForward()) webView.goForward()
+                    }
+                }
+                is com.oneatom.onebrowser.viewmodel.NavigationAction.Reload -> {
+                    if (action.tabId == currentTabId) {
+                        webView.reload()
+                    }
+                }
+                is com.oneatom.onebrowser.viewmodel.NavigationAction.Stop -> {
+                    if (action.tabId == currentTabId) {
+                        webView.stopLoading()
+                    }
+                }
+            }
+        }
+    }
 
     // Update theme when it changes
     LaunchedEffect(isDarkTheme) {

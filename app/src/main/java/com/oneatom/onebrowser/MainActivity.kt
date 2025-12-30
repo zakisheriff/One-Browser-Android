@@ -45,8 +45,21 @@ class MainActivity : ComponentActivity() {
             val isDownloadsOpen by viewModel.isDownloadsOpen.collectAsState()
             val isSettingsOpen by viewModel.isSettingsOpen.collectAsState()
             val suggestions by viewModel.suggestions.collectAsState()
+            val navigationActions = viewModel.navigationActions
 
             val isDark = isDarkTheme(themeMode)
+
+            // Handle back button
+            val activeTab = tabs.find { it.id == activeTabId }
+            val canGoBack = activeTab?.canGoBack == true
+
+            androidx.activity.compose.BackHandler(enabled = true) {
+                if (canGoBack) {
+                    viewModel.goBack()
+                } else {
+                    finish()
+                }
+            }
 
             OneBrowserTheme(themeMode = themeMode) {
                 BrowserScreen(
@@ -64,18 +77,10 @@ class MainActivity : ComponentActivity() {
                         suggestions = suggestions,
                         onQueryChange = viewModel::fetchSuggestions,
                         onNavigate = viewModel::navigateTo,
-                        onGoBack = {
-                            // Will be handled by WebView
-                        },
-                        onGoForward = {
-                            // Will be handled by WebView
-                        },
-                        onReload = {
-                            // Will be handled by WebView
-                        },
-                        onStop = {
-                            // Will be handled by WebView
-                        },
+                        onGoBack = viewModel::goBack,
+                        onGoForward = viewModel::goForward,
+                        onReload = viewModel::reload,
+                        onStop = viewModel::stopLoading,
                         onGoHome = viewModel::goHome,
                         onToggleTheme = viewModel::toggleTheme,
                         onOpenMenu = viewModel::toggleMenu,
@@ -85,15 +90,10 @@ class MainActivity : ComponentActivity() {
                         onOpenSettings = viewModel::openSettings,
                         onOpenAbout = { /* TODO: Show about dialog */},
                         onUpdateTab = viewModel::updateTab,
+                        navigationActions = navigationActions,
                         modifier = Modifier.fillMaxSize().systemBarsPadding()
                 )
             }
         }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        // Handle back press - could go back in WebView or minimize
-        super.onBackPressed()
     }
 }

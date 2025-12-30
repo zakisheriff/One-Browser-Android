@@ -41,6 +41,10 @@ fun BrowserScreen(
         suggestions: List<String>,
         onQueryChange: (String) -> Unit,
         onUpdateTab: (String, Tab.() -> Tab) -> Unit,
+        navigationActions:
+                kotlinx.coroutines.flow.SharedFlow<
+                        com.oneatom.onebrowser.viewmodel.NavigationAction>? =
+                null,
         modifier: Modifier = Modifier
 ) {
     val backgroundColor = if (isDarkTheme) DarkBackground else LightBackground
@@ -85,6 +89,7 @@ fun BrowserScreen(
                                     },
                                     onNavigate = onNavigate,
                                     onOpenSettings = onOpenSettings,
+                                    navigationActions = navigationActions,
                                     modifier = Modifier.padding(horizontal = 4.dp)
                             )
                         }

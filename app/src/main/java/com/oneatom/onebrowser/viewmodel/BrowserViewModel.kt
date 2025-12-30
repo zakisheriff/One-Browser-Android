@@ -12,15 +12,54 @@ import java.net.URLEncoder
 import java.util.regex.Pattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+sealed class NavigationAction {
+    data class GoBack(val tabId: String) : NavigationAction()
+    data class GoForward(val tabId: String) : NavigationAction()
+    data class Reload(val tabId: String) : NavigationAction()
+    data class Stop(val tabId: String) : NavigationAction()
+}
+
 class BrowserViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsRepository = SettingsRepository(application)
+
+    // Navigation Events
+    private val _navigationActions = MutableSharedFlow<NavigationAction>()
+    val navigationActions: SharedFlow<NavigationAction> = _navigationActions.asSharedFlow()
+
+    // Navigation Commands
+    fun goBack() {
+        _activeTabId.value?.let { id ->
+            viewModelScope.launch { _navigationActions.emit(NavigationAction.GoBack(id)) }
+        }
+    }
+
+    fun goForward() {
+        _activeTabId.value?.let { id ->
+            viewModelScope.launch { _navigationActions.emit(NavigationAction.GoForward(id)) }
+        }
+    }
+
+    fun reload() {
+        _activeTabId.value?.let { id ->
+            viewModelScope.launch { _navigationActions.emit(NavigationAction.Reload(id)) }
+        }
+    }
+
+    fun stopLoading() {
+        _activeTabId.value?.let { id ->
+            viewModelScope.launch { _navigationActions.emit(NavigationAction.Stop(id)) }
+        }
+    }
 
     // Tab Management
     private val _tabs = MutableStateFlow<List<Tab>>(listOf(Tab()))
