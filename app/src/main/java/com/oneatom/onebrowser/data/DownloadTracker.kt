@@ -46,7 +46,8 @@ object DownloadTracker {
     private val _downloads = MutableStateFlow<List<DownloadStatus>>(emptyList())
     val downloads: StateFlow<List<DownloadStatus>> = _downloads.asStateFlow()
 
-    // Cache previous bytes to calculate speed
+    // Cache previous speed to smoothing
+    private val previousSpeedMap = mutableMapOf<Long, Long>()
     private val previousBytesMap = mutableMapOf<Long, Long>()
     private val previousTimeMap = mutableMapOf<Long, Long>()
 
@@ -71,7 +72,6 @@ object DownloadTracker {
 
     private fun updateDownloads(downloadManager: DownloadManager) {
         val query = DownloadManager.Query()
-        // We could filter here but allow all for now
         val cursor: Cursor? =
                 try {
                     downloadManager.query(query)
@@ -107,23 +107,50 @@ object DownloadTracker {
                 if (status == DownloadManager.STATUS_RUNNING) {
                     val prevBytes = previousBytesMap[id]
                     val prevTime = previousTimeMap[id]
+                    val lastKnownSpeed = previousSpeedMap[id] ?: 0L
 
                     if (prevBytes != null && prevTime != null) {
                         val timeDiff = currentTime - prevTime
                         val bytesDiff = downloadedBytes - prevBytes
                         if (timeDiff > 0) {
-                            speed = (bytesDiff * 1000) / timeDiff
+                            // Calculate instantaneous speed
+                            val instantSpeed = (bytesDiff * 1000) / timeDiff
+
+                            // Exponential Moving Average (smoothing)
+                            // alpha = 0.3 means new value has 30% weight, old has 70%
+                            speed =
+                                    if (lastKnownSpeed > 0) {
+                                        (lastKnownSpeed * 0.7 + instantSpeed * 0.3).toLong()
+                                    } else {
+                                        instantSpeed
+                                    }
+
                             if (speed > 0) {
                                 val remainingBytes = totalSize - downloadedBytes
                                 eta = remainingBytes / speed
+                            } else {
+                                // If speed drops to 0 temporarily (e.g. buffer), keep last known
+                                // valid speed
+                                // or just show calculating if it stays 0 for too long.
+                                // simpler: keep last known speed for a bit?
+                                speed = lastKnownSpeed
+                                if (speed > 0) {
+                                    val remainingBytes = totalSize - downloadedBytes
+                                    eta = remainingBytes / speed
+                                }
                             }
                         }
+                    } else {
+                        // First tick, can't calculate speed yet
+                        speed = lastKnownSpeed
                     }
                     previousBytesMap[id] = downloadedBytes
                     previousTimeMap[id] = currentTime
+                    previousSpeedMap[id] = speed
                 } else {
                     previousBytesMap.remove(id)
                     previousTimeMap.remove(id)
+                    previousSpeedMap.remove(id)
                 }
 
                 newDownloads.add(

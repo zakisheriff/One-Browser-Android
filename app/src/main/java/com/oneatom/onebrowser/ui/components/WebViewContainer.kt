@@ -276,6 +276,14 @@ fun WebViewContainer(
                         val extension = MimeTypeMap.getFileExtensionFromUrl(url)
                         val mimeTypeMap = MimeTypeMap.getSingleton()
                         val mimeExtension = mimeTypeMap.getExtensionFromMimeType(mimetype)
+                        val urlPath =
+                                try {
+                                    Uri.parse(url).path ?: ""
+                                } catch (e: Exception) {
+                                    ""
+                                }
+                        val urlExtFallback =
+                                if (urlPath.contains(".")) urlPath.substringAfterLast(".") else null
 
                         // If filename ends in .bin or has no extension, try to fix it
                         if (filename.endsWith(".bin") || !filename.contains(".")) {
@@ -283,7 +291,20 @@ fun WebViewContainer(
                                 filename = filename.replace(".bin", "") + ".apk"
                             } else if (mimeExtension != null) {
                                 filename = filename.replace(".bin", "") + "." + mimeExtension
+                            } else if (urlExtFallback != null && urlExtFallback.length in 2..5) {
+                                // Trust URL extension if it looks like a file extension (e.g. apk,
+                                // pdf, zip)
+                                filename = filename.replace(".bin", "") + "." + urlExtFallback
                             }
+                        }
+
+                        // Explicitly fix common APK issue where server sends wrong mime
+                        if ((url.endsWith(".apk") || (urlExtFallback == "apk")) &&
+                                        !filename.endsWith(".apk")
+                        ) {
+                            filename =
+                                    if (filename.endsWith(".bin")) filename.replace(".bin", ".apk")
+                                    else "$filename.apk"
                         }
 
                         // Force APK if mime matches

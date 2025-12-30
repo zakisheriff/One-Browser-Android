@@ -49,16 +49,18 @@ class DownloadService : Service() {
             launch { DownloadTracker.startTracking(this@DownloadService) }
             launch {
                 DownloadTracker.downloads.collectLatest { downloads ->
-                    val running = downloads.filter { it.status == DownloadManager.STATUS_RUNNING }
+                    val active =
+                            downloads.filter {
+                                it.status == DownloadManager.STATUS_RUNNING ||
+                                        it.status == DownloadManager.STATUS_PENDING ||
+                                        it.status == DownloadManager.STATUS_PAUSED
+                            }
 
-                    if (running.isEmpty()) {
-                        // If no running downloads, check if we should stop service
-                        // We stop foreground but maybe keep service alive?
-                        // For now, stop everything to save battery
+                    if (active.isEmpty()) {
                         stopForeground(true)
                         stopSelf()
                     } else {
-                        running.forEach { download -> updateNotification(download) }
+                        active.forEach { download -> updateNotification(download) }
                     }
                 }
             }
@@ -96,10 +98,18 @@ class DownloadService : Service() {
                         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
 
+        val contentText =
+                when (download.status) {
+                    DownloadManager.STATUS_RUNNING -> "$speed • $eta"
+                    DownloadManager.STATUS_PENDING -> "Pending..."
+                    DownloadManager.STATUS_PAUSED -> "Paused"
+                    else -> ""
+                }
+
         val notification =
                 NotificationCompat.Builder(this, CHANNEL_ID)
                         .setContentTitle(download.title)
-                        .setContentText("$speed • $eta")
+                        .setContentText(contentText)
                         .setSmallIcon(android.R.drawable.stat_sys_download)
                         .setProgress(100, progress, false)
                         .setOngoing(true)
