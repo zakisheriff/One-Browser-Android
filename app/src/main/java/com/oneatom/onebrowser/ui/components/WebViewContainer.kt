@@ -10,16 +10,26 @@ import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.*
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import com.oneatom.onebrowser.data.Tab
 import com.oneatom.onebrowser.ui.theme.DarkBackground
 import com.oneatom.onebrowser.ui.theme.LightBackground
@@ -59,6 +69,14 @@ fun WebViewContainer(
 
     // Hoist WebView instance reference for fullscreen use
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
+
+    // --- Native Video Assistant & Player States ---
+    var showNativePlayer by remember { mutableStateOf(false) }
+    var isVideoPresent by remember { mutableStateOf(false) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var currentTime by remember { mutableFloatStateOf(0f) }
+    var duration by remember { mutableFloatStateOf(0f) }
+    var title by remember { mutableStateOf("") }
 
     // Helper to capture thumbnail
     fun captureWebView(view: WebView) {
@@ -113,7 +131,6 @@ fun WebViewContainer(
                     settings.mediaPlaybackRequiresUserGesture = false
 
                     // User Agent
-                    // Use a standard generic Android user agent or keep default
                     val defaultUserAgent = settings.userAgentString
                     settings.userAgentString = defaultUserAgent.replace("; wv", "")
 
@@ -123,12 +140,9 @@ fun WebViewContainer(
                     }
 
                     // Javascript Interface
-                    // Javascript Interface
                     addJavascriptInterface(
                             OneBrowserJsInterface(
-                                    onNavigate = { url ->
-                                        onNavigate(url)
-                                    }, // Wrap if needed or pass directly if signature matches
+                                    onNavigate = { url -> onNavigate(url) },
                                     onOpenSettings = { onOpenSettings() },
                                     getTheme = { if (isDarkTheme) "dark" else "light" }
                             ),
@@ -158,7 +172,6 @@ fun WebViewContainer(
                                     url?.let { onUrlChanged(it) }
                                     onLoadingChanged(true)
                                     onSslSecureChanged(url?.startsWith("https://") == true)
-                                    // Check if it's an internal page
                                     if (url?.startsWith("file:///android_asset/") == true) {
                                         // Inject theme if needed
                                     }
@@ -173,7 +186,6 @@ fun WebViewContainer(
                                         captureWebView(it)
                                     }
 
-                                    // Inject theme CSS for internal pages
                                     if (url?.startsWith("file:///android_asset/") == true) {
                                         val themeClass = if (isDarkTheme) "dark" else "light"
                                         view?.evaluateJavascript(
@@ -188,8 +200,6 @@ fun WebViewContainer(
                                         request: WebResourceRequest?
                                 ): Boolean {
                                     val url = request?.url?.toString() ?: return false
-
-                                    // Handle internal URLs
                                     when {
                                         url.startsWith("onebrowser://settings") -> {
                                             onOpenSettings()
@@ -200,7 +210,6 @@ fun WebViewContainer(
                                             return true
                                         }
                                     }
-
                                     if (url.startsWith("http") || url.startsWith("file")) {
                                         return false
                                     }
@@ -222,12 +231,11 @@ fun WebViewContainer(
                                         handler: SslErrorHandler?,
                                         error: android.net.http.SslError?
                                 ) {
-                                    handler?.proceed() // Warning: Checks disabled for demo
+                                    handler?.proceed()
                                     onSslSecureChanged(false)
                                 }
                             }
 
-                    // Download Listener
                     setDownloadListener {
                             url,
                             userAgent,
@@ -301,179 +309,14 @@ fun WebViewContainer(
                                     val decorView =
                                             activity.window.decorView as? ViewGroup ?: return
 
-                                    // Create ComposeView wrapper
-                                    val composeView =
-                                            androidx.compose.ui.platform.ComposeView(context)
-                                                    .apply {
-                                                        setContent {
-                                                            Box(
-                                                                    modifier =
-                                                                            Modifier.fillMaxSize()
-                                                                                    .background(
-                                                                                            androidx.compose
-                                                                                                    .ui
-                                                                                                    .graphics
-                                                                                                    .Color
-                                                                                                    .Black
-                                                                                    )
-                                                            ) {
-                                                                // The Video Content (AndroidView)
-                                                                AndroidView(
-                                                                        factory = { _ ->
-                                                                            view
-                                                                                    ?: android.view
-                                                                                            .View(
-                                                                                                    context
-                                                                                            )
-                                                                        },
-                                                                        modifier =
-                                                                                Modifier.fillMaxSize()
-                                                                )
-
-                                                                // Native Overlay
-                                                                var isPlaying by remember {
-                                                                    mutableStateOf(false)
-                                                                }
-                                                                var currentTime by remember {
-                                                                    mutableFloatStateOf(0f)
-                                                                }
-                                                                var duration by remember {
-                                                                    mutableFloatStateOf(0f)
-                                                                }
-                                                                var title by remember {
-                                                                    mutableStateOf("")
-                                                                }
-
-                                                                // Poll for video state
-                                                                LaunchedEffect(Unit) {
-                                                                    while (true) {
-                                                                        delay(500)
-                                                                        withContext(
-                                                                                kotlinx.coroutines
-                                                                                        .Dispatchers
-                                                                                        .Main
-                                                                        ) {
-                                                                            webViewRef
-                                                                                    ?.evaluateJavascript(
-                                                                                            """
-                                                 (function() {
-                                                    var v = document.querySelector('video');
-                                                    if (v) {
-                                                        return JSON.stringify({
-                                                            isPlaying: !v.paused,
-                                                            currentTime: v.currentTime,
-                                                            duration: v.duration,
-                                                            title: document.title
-                                                        });
-                                                    }
-                                                    return null;
-                                                 })();
-                                                 """.trimIndent()
-                                                                                    ) { json ->
-                                                                                        if (json !=
-                                                                                                        null &&
-                                                                                                        json !=
-                                                                                                                "null"
-                                                                                        ) {
-                                                                                            try {
-                                                                                                val obj =
-                                                                                                        org.json
-                                                                                                                .JSONObject(
-                                                                                                                        json
-                                                                                                                )
-                                                                                                isPlaying =
-                                                                                                        obj.optBoolean(
-                                                                                                                "isPlaying"
-                                                                                                        )
-                                                                                                currentTime =
-                                                                                                        obj.optDouble(
-                                                                                                                        "currentTime"
-                                                                                                                )
-                                                                                                                .toFloat()
-                                                                                                duration =
-                                                                                                        obj.optDouble(
-                                                                                                                        "duration"
-                                                                                                                )
-                                                                                                                .toFloat()
-                                                                                                title =
-                                                                                                        obj.optString(
-                                                                                                                "title"
-                                                                                                        )
-                                                                                            } catch (
-                                                                                                    e:
-                                                                                                            Exception) {
-                                                                                                e.printStackTrace()
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                        }
-                                                                    }
-                                                                }
-
-                                                                VideoPlayerControls(
-                                                                        isPlaying = isPlaying,
-                                                                        currentTime = currentTime,
-                                                                        duration = duration,
-                                                                        title = title,
-                                                                        onPlayPause = {
-                                                                            webViewRef
-                                                                                    ?.evaluateJavascript(
-                                                                                            "var v = document.querySelector('video'); if (v) { if (v.paused) v.play(); else v.pause(); }",
-                                                                                            null
-                                                                                    )
-                                                                            isPlaying =
-                                                                                    !isPlaying // Optimistic update
-                                                                        },
-                                                                        onSeek = { newTime ->
-                                                                            webViewRef
-                                                                                    ?.evaluateJavascript(
-                                                                                            "var v = document.querySelector('video'); if (v) v.currentTime = $newTime;",
-                                                                                            null
-                                                                                    )
-                                                                            currentTime = newTime
-                                                                        },
-                                                                        onClose = {
-                                                                            webViewRef
-                                                                                    ?.evaluateJavascript(
-                                                                                            "if (document.exitFullscreen) document.exitFullscreen();",
-                                                                                            null
-                                                                                    )
-                                                                        },
-                                                                        onRotate = {
-                                                                            val requestedOrientation =
-                                                                                    if (activity.requestedOrientation ==
-                                                                                                    android.content
-                                                                                                            .pm
-                                                                                                            .ActivityInfo
-                                                                                                            .SCREEN_ORIENTATION_LANDSCAPE
-                                                                                    )
-                                                                                            android.content
-                                                                                                    .pm
-                                                                                                    .ActivityInfo
-                                                                                                    .SCREEN_ORIENTATION_PORTRAIT
-                                                                                    else
-                                                                                            android.content
-                                                                                                    .pm
-                                                                                                    .ActivityInfo
-                                                                                                    .SCREEN_ORIENTATION_LANDSCAPE
-                                                                            activity.requestedOrientation =
-                                                                                    requestedOrientation
-                                                                        }
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-
-                                    // Add to DecorView
                                     decorView.addView(
-                                            composeView,
+                                            view,
                                             ViewGroup.LayoutParams(
                                                     ViewGroup.LayoutParams.MATCH_PARENT,
                                                     ViewGroup.LayoutParams.MATCH_PARENT
                                             )
                                     )
 
-                                    // Hide UI
                                     decorView.systemUiVisibility =
                                             (android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
                                                     android.view.View
@@ -481,7 +324,7 @@ fun WebViewContainer(
                                                     android.view.View
                                                             .SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
 
-                                    customView = composeView
+                                    customView = view
                                     customViewCallback = callback
                                 }
 
@@ -490,34 +333,80 @@ fun WebViewContainer(
                                     val decorView =
                                             activity.window.decorView as? ViewGroup ?: return
 
-                                    // Remove the custom view
                                     if (customView != null) {
                                         decorView.removeView(customView)
                                         customView = null
                                     }
 
-                                    // Restore System UI (Clear flags)
                                     decorView.systemUiVisibility =
                                             android.view.View.SYSTEM_UI_FLAG_VISIBLE
 
-                                    // Notify callback
                                     customViewCallback?.onCustomViewHidden()
                                     customViewCallback = null
-
-                                    // Reset orientation
-                                    // activity.requestedOrientation =
-                                    // android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                 }
                             }
                 }
             }
 
-    // Handle Back Press when in Fullscreen
-    androidx.activity.compose.BackHandler(enabled = customView != null) {
+    // Poll for video state
+    LaunchedEffect(Unit) {
+        while (true) {
+            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                webViewRef?.evaluateJavascript(
+                        """
+                        (function() {
+                        var v = document.querySelector('video');
+                        if (v) {
+                            return JSON.stringify({
+                                isPresent: true,
+                                isPlaying: !v.paused,
+                                currentTime: v.currentTime,
+                                duration: v.duration,
+                                title: document.title
+                            });
+                        }
+                        return JSON.stringify({ isPresent: false });
+                        })();
+                        """.trimIndent()
+                ) { json ->
+                    if (json != null && json != "null") {
+                        try {
+                            val obj = org.json.JSONObject(json)
+                            val present = obj.optBoolean("isPresent")
+                            isVideoPresent = present
+
+                            if (present) {
+                                val newIsPlaying = obj.optBoolean("isPlaying")
+                                isPlaying = newIsPlaying
+
+                                val newDuration = obj.optDouble("duration").toFloat()
+                                if (newDuration > 0) duration = newDuration
+
+                                val newTime = obj.optDouble("currentTime").toFloat()
+                                currentTime = newTime
+
+                                title = obj.optString("title")
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+            delay(200)
+        }
+    }
+
+    // Handle Back Press
+    BackHandler(enabled = customView != null || showNativePlayer) {
         val activity = context as? android.app.Activity
         val decorView = activity?.window?.decorView as? ViewGroup
 
-        if (customView != null && decorView != null) {
+        if (showNativePlayer) {
+            showNativePlayer = false
+            // Reset system UI
+            decorView?.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
+        } else if (customView != null && decorView != null) {
             decorView.removeView(customView)
             customView = null
             decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
@@ -584,7 +473,6 @@ fun WebViewContainer(
     // Properly destroy WebView when this composable is disposed
     DisposableEffect(Unit) {
         onDispose {
-            // Capture one last time before destroy
             captureWebView(webView)
             webView.destroy()
         }
@@ -600,6 +488,77 @@ fun WebViewContainer(
                 factory = { webView },
                 modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(24.dp))
         )
+
+        // Video Assistant Button (Purple FAB)
+        if (isVideoPresent && !showNativePlayer && customView == null) {
+            Box(
+                    modifier =
+                            Modifier.align(Alignment.BottomEnd).padding(bottom = 80.dp, end = 16.dp)
+            ) {
+                FloatingActionButton(
+                        onClick = { showNativePlayer = true },
+                        containerColor = Color(0xFF6200EE),
+                        contentColor = Color.White,
+                        shape = CircleShape
+                ) { Icon(Icons.Filled.PlayArrow, contentDescription = "Open Video Player") }
+            }
+        }
+
+        // Native Player Overlay
+        if (showNativePlayer) {
+            val context = LocalContext.current
+            DisposableEffect(Unit) {
+                val activity = context as? android.app.Activity
+                val window = activity?.window
+                window?.decorView?.systemUiVisibility =
+                        (android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
+                                android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                                android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+                onDispose {
+                    window?.decorView?.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
+                }
+            }
+
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black).zIndex(10f)) {
+                VideoPlayerControls(
+                        isPlaying = isPlaying,
+                        currentTime = currentTime,
+                        duration = duration,
+                        title = title,
+                        onPlayPause = {
+                            webView.evaluateJavascript(
+                                    "var v = document.querySelector('video'); if (v) { if (v.paused) v.play(); else v.pause(); }",
+                                    null
+                            )
+                            isPlaying = !isPlaying
+                        },
+                        onSeek = { newTime ->
+                            webView.evaluateJavascript(
+                                    "var v = document.querySelector('video'); if (v) v.currentTime = $newTime;",
+                                    null
+                            )
+                            currentTime = newTime
+                        },
+                        onClose = { showNativePlayer = false },
+                        onRotate = {
+                            val activity = context as? android.app.Activity
+                            if (activity != null) {
+                                val requestedOrientation =
+                                        if (activity.requestedOrientation ==
+                                                        android.content.pm.ActivityInfo
+                                                                .SCREEN_ORIENTATION_LANDSCAPE
+                                        )
+                                                android.content.pm.ActivityInfo
+                                                        .SCREEN_ORIENTATION_PORTRAIT
+                                        else
+                                                android.content.pm.ActivityInfo
+                                                        .SCREEN_ORIENTATION_LANDSCAPE
+                                activity.requestedOrientation = requestedOrientation
+                            }
+                        }
+                )
+            }
+        }
     }
 }
 
