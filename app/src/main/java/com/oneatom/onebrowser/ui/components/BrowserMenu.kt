@@ -27,6 +27,7 @@ fun BrowserMenu(
         onDismiss: () -> Unit,
         onNewTab: () -> Unit,
         onNewIncognitoTab: () -> Unit,
+        onOpenDownloads: () -> Unit,
         onOpenSettings: () -> Unit,
         onOpenAbout: () -> Unit,
         modifier: Modifier = Modifier
@@ -90,6 +91,18 @@ fun BrowserMenu(
                                                         vertical = 8.dp
                                                 ),
                                         color = borderColor
+                                )
+
+                                MenuItem(
+                                        icon = Icons.Default.Download,
+                                        text = "Downloads",
+                                        textColor = textColor,
+                                        mutedColor = mutedColor,
+                                        isDarkTheme = isDarkTheme,
+                                        onClick = {
+                                                onOpenDownloads()
+                                                onDismiss()
+                                        }
                                 )
 
                                 MenuItem(

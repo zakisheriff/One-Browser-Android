@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +26,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -122,6 +124,24 @@ fun BottomToolbar(
                                         .clip(RoundedCornerShape(22.dp))
                                         .background(backgroundColor)
                                         .border(1.dp, borderColor, RoundedCornerShape(22.dp))
+                                        .pointerInput(Unit) {
+                                                detectDragGestures { change, dragAmount ->
+                                                        val (x, y) = dragAmount
+                                                        if (y < -10
+                                                        ) { // Simple threshold for swipe up
+                                                                onOpenTabs()
+                                                        }
+                                                        // Don't consume so click can potentially
+                                                        // still work if it wasn't a drag?
+                                                        // Actually detecting drag usually consumes
+                                                        // the events preventing click
+                                                        // This might need refinement but let's try
+                                                        // this standard approach
+                                                        if (java.lang.Math.abs(y) > 5) {
+                                                                change.consume()
+                                                        }
+                                                }
+                                        }
                                         .clickable { onSearchFocusChange(true) }
                                         .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,

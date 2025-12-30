@@ -1,10 +1,15 @@
 package com.oneatom.onebrowser.ui.components
 
 import android.annotation.SuppressLint
+import android.app.DownloadManager
+import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.*
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -164,6 +169,47 @@ fun WebViewContainer(
                                     onSslSecureChanged(false)
                                 }
                             }
+
+                    // Set Download Listener
+                    setDownloadListener {
+                            url,
+                            userAgent,
+                            contentDisposition,
+                            mimetype,
+                            contentLength ->
+                        try {
+                            val request = DownloadManager.Request(Uri.parse(url))
+                            request.setMimeType(mimetype)
+                            val cookies = CookieManager.getInstance().getCookie(url)
+                            request.addRequestHeader("cookie", cookies)
+                            request.addRequestHeader("User-Agent", userAgent)
+                            request.setDescription("Downloading file...")
+                            request.setTitle(
+                                    URLUtil.guessFileName(url, contentDisposition, mimetype)
+                            )
+                            request.allowScanningByMediaScanner()
+                            request.setNotificationVisibility(
+                                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                            )
+                            request.setDestinationInExternalPublicDir(
+                                    Environment.DIRECTORY_DOWNLOADS,
+                                    URLUtil.guessFileName(url, contentDisposition, mimetype)
+                            )
+
+                            val dm =
+                                    context.getSystemService(Context.DOWNLOAD_SERVICE) as
+                                            DownloadManager
+                            dm.enqueue(request)
+                            Toast.makeText(context, "Downloading...", Toast.LENGTH_LONG).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                            context,
+                                            "Download failed: ${e.message}",
+                                            Toast.LENGTH_SHORT
+                                    )
+                                    .show()
+                        }
+                    }
 
                     // Set WebChromeClient for progress and title
                     webChromeClient =

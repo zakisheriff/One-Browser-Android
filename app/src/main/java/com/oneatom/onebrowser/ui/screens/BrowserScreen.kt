@@ -20,6 +20,7 @@ fun BrowserScreen(
         showHomeButton: Boolean,
         isDarkTheme: Boolean,
         isMenuOpen: Boolean,
+        isDownloadsOpen: Boolean,
         onTabClick: (String) -> Unit,
         onTabClose: (String) -> Unit,
         onNewTab: () -> Unit,
@@ -33,6 +34,8 @@ fun BrowserScreen(
         onToggleTheme: () -> Unit,
         onOpenMenu: () -> Unit,
         onCloseMenu: () -> Unit,
+        onOpenDownloads: () -> Unit,
+        onCloseDownloads: () -> Unit,
         onOpenSettings: () -> Unit,
         onOpenAbout: () -> Unit,
         suggestions: List<String>,
@@ -173,6 +176,21 @@ fun BrowserScreen(
             )
         }
 
+        // Downloads Screen
+        AnimatedVisibility(
+                visible = isDownloadsOpen,
+                enter =
+                        slideInVertically(
+                                initialOffsetY = { it },
+                                animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(),
+                exit =
+                        slideOutVertically(
+                                targetOffsetY = { it },
+                                animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeOut()
+        ) { DownloadsScreen(isDarkTheme = isDarkTheme, onBack = onCloseDownloads) }
+
         // Menu popup
         BrowserMenu(
                 isOpen = isMenuOpen,
@@ -180,6 +198,7 @@ fun BrowserScreen(
                 onDismiss = onCloseMenu,
                 onNewTab = onNewTab,
                 onNewIncognitoTab = onNewIncognitoTab,
+                onOpenDownloads = onOpenDownloads,
                 onOpenSettings = onOpenSettings,
                 onOpenAbout = onOpenAbout
         )

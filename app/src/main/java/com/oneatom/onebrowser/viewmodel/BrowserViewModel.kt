@@ -51,6 +51,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val _isMenuOpen = MutableStateFlow(false)
     val isMenuOpen: StateFlow<Boolean> = _isMenuOpen.asStateFlow()
 
+    private val _isDownloadsOpen = MutableStateFlow(false)
+    val isDownloadsOpen: StateFlow<Boolean> = _isDownloadsOpen.asStateFlow()
+
     // Search Suggestions
     private val _suggestions = MutableStateFlow<List<String>>(emptyList())
     val suggestions: StateFlow<List<String>> = _suggestions.asStateFlow()
@@ -257,5 +260,14 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun clearSuggestions() {
         _suggestions.value = emptyList()
+    }
+
+    fun onOpenDownloads() {
+        _isDownloadsOpen.value = true
+        _isMenuOpen.value = false
+    }
+
+    fun onCloseDownloads() {
+        _isDownloadsOpen.value = false
     }
 }

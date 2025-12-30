@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
             val toolbarPosition by viewModel.toolbarPosition.collectAsState()
             val showHomeButton by viewModel.showHomeButton.collectAsState()
             val isMenuOpen by viewModel.isMenuOpen.collectAsState()
+            val isDownloadsOpen by viewModel.isDownloadsOpen.collectAsState()
             val isSettingsOpen by viewModel.isSettingsOpen.collectAsState()
             val suggestions by viewModel.suggestions.collectAsState()
 
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
                         showHomeButton = showHomeButton,
                         isDarkTheme = isDark,
                         isMenuOpen = isMenuOpen,
+                        isDownloadsOpen = isDownloadsOpen,
                         onTabClick = viewModel::setActiveTab,
                         onTabClose = viewModel::closeTab,
                         onNewTab = { viewModel.addTab() },
@@ -78,6 +80,8 @@ class MainActivity : ComponentActivity() {
                         onToggleTheme = viewModel::toggleTheme,
                         onOpenMenu = viewModel::toggleMenu,
                         onCloseMenu = viewModel::closeMenu,
+                        onOpenDownloads = viewModel::onOpenDownloads,
+                        onCloseDownloads = viewModel::onCloseDownloads,
                         onOpenSettings = viewModel::openSettings,
                         onOpenAbout = { /* TODO: Show about dialog */},
                         onUpdateTab = viewModel::updateTab,
