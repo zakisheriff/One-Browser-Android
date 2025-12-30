@@ -82,31 +82,43 @@ fun BottomToolbar(
                 modifier =
                         modifier.fillMaxWidth()
                                 .pointerInput(Unit) {
-                                        detectDragGestures { change, dragAmount ->
-                                                val (x, y) = dragAmount
-                                                // Determine dominant axis
-                                                if (kotlin.math.abs(x) > kotlin.math.abs(y)) {
-                                                        // Horizontal swipe
-                                                        if (kotlin.math.abs(x) > 10) { // Threshold
-                                                                if (x > 0) {
-                                                                        // Swipe Right (L->R) ->
-                                                                        // Previous Tab
-                                                                        onSwipePrevious()
-                                                                } else {
-                                                                        // Swipe Left (R->L) -> Next
-                                                                        // Tab
-                                                                        onSwipeNext()
+                                        var totalDragX = 0f
+                                        var totalDragY = 0f
+
+                                        detectDragGestures(
+                                                onDragStart = {
+                                                        totalDragX = 0f
+                                                        totalDragY = 0f
+                                                },
+                                                onDragEnd = {
+                                                        if (kotlin.math.abs(totalDragX) >
+                                                                        kotlin.math.abs(totalDragY)
+                                                        ) {
+                                                                // Horizontal
+                                                                if (kotlin.math.abs(totalDragX) >
+                                                                                100
+                                                                ) { // Higher threshold for atomic
+                                                                        // swipe
+                                                                        if (totalDragX > 0) {
+                                                                                onSwipePrevious()
+                                                                        } else {
+                                                                                onSwipeNext()
+                                                                        }
                                                                 }
-                                                                change.consume()
+                                                        } else {
+                                                                // Vertical
+                                                                if (totalDragY < -50
+                                                                ) { // Threshold for swipe up
+                                                                        onOpenTabs()
+                                                                }
                                                         }
-                                                } else {
-                                                        // Vertical swipe
-                                                        if (y < -10
-                                                        ) { //  Simple threshold for swipe up
-                                                                onOpenTabs()
-                                                                change.consume()
-                                                        }
+                                                        totalDragX = 0f
+                                                        totalDragY = 0f
                                                 }
+                                        ) { change, dragAmount ->
+                                                change.consume()
+                                                totalDragX += dragAmount.x
+                                                totalDragY += dragAmount.y
                                         }
                                 }
                                 .padding(horizontal = 12.dp, vertical = 12.dp),

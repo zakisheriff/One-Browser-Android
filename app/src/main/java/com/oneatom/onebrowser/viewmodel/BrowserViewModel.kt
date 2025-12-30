@@ -145,6 +145,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             _activeTabId.value = newTab.id
         } else {
             _tabs.value = currentTabs.filter { it.id != tabId }
+            deleteThumbnail(tabId)
 
             // If we closed the active tab, switch to adjacent tab
             if (_activeTabId.value == tabId) {
@@ -157,6 +158,67 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun setActiveTab(tabId: String) {
         if (_tabs.value.any { it.id == tabId }) {
             _activeTabId.value = tabId
+        }
+    }
+
+    fun updateThumbnail(tabId: String, bitmap: android.graphics.Bitmap) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                val thumbnailDir = java.io.File(context.filesDir, "thumbnails")
+                if (!thumbnailDir.exists()) {
+                    thumbnailDir.mkdirs()
+                }
+
+                val file = java.io.File(thumbnailDir, "tab_$tabId.jpg")
+                val stream = java.io.FileOutputStream(file)
+
+                // Scale down if too big to save space/performance
+                // Max dimension 600px is usually enough for a switcher
+                val maxDim = 600
+                val scale =
+                        if (bitmap.width > maxDim || bitmap.height > maxDim) {
+                            val ratio =
+                                    Math.min(
+                                            maxDim.toFloat() / bitmap.width,
+                                            maxDim.toFloat() / bitmap.height
+                                    )
+                            ratio
+                        } else {
+                            1.0f
+                        }
+
+                val saveBitmap =
+                        if (scale < 1.0f) {
+                            android.graphics.Bitmap.createScaledBitmap(
+                                    bitmap,
+                                    (bitmap.width * scale).toInt(),
+                                    (bitmap.height * scale).toInt(),
+                                    true
+                            )
+                        } else {
+                            bitmap
+                        }
+
+                saveBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, stream)
+                stream.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun deleteThumbnail(tabId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                val file = java.io.File(context.filesDir, "thumbnails/tab_$tabId.jpg")
+                if (file.exists()) {
+                    file.delete()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
