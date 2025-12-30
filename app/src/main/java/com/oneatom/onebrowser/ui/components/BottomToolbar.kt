@@ -347,43 +347,49 @@ fun SearchOverlay(
                                         }
                                 }
                         }
-                }
 
-                // Suggestions List
-                if (suggestions.isNotEmpty()) {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(suggestions) { suggestion ->
-                                        Row(
-                                                modifier =
-                                                        Modifier.fillMaxWidth()
-                                                                .clickable {
-                                                                        onNavigate(suggestion)
-                                                                        focusManager.clearFocus()
-                                                                        onDismiss()
-                                                                }
-                                                                .padding(
-                                                                        vertical = 12.dp,
-                                                                        horizontal = 16.dp
-                                                                ),
-                                                verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                                Icon(
-                                                        imageVector = Icons.Default.Search,
-                                                        contentDescription = null,
-                                                        tint = mutedColor,
-                                                        modifier = Modifier.size(20.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                                Text(
-                                                        text = suggestion,
-                                                        color = textColor,
-                                                        fontSize = 16.sp,
-                                                        maxLines = 1,
-                                                        overflow = TextOverflow.Ellipsis
-                                                )
+                        // Suggestions List
+                        if (suggestions.isNotEmpty()) {
+                                LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                                        items(suggestions) { suggestion ->
+                                                Row(
+                                                        modifier =
+                                                                Modifier.fillMaxWidth()
+                                                                        .clickable {
+                                                                                onNavigate(
+                                                                                        suggestion
+                                                                                )
+                                                                                focusManager
+                                                                                        .clearFocus()
+                                                                                onDismiss()
+                                                                        }
+                                                                        .padding(
+                                                                                vertical = 12.dp,
+                                                                                horizontal = 16.dp
+                                                                        ),
+                                                        verticalAlignment =
+                                                                Alignment.CenterVertically
+                                                ) {
+                                                        Icon(
+                                                                imageVector = Icons.Default.Search,
+                                                                contentDescription = null,
+                                                                tint = mutedColor,
+                                                                modifier = Modifier.size(20.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(12.dp))
+                                                        Text(
+                                                                text = suggestion,
+                                                                color = textColor,
+                                                                fontSize = 16.sp,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                        )
+                                                }
+                                                Divider(color = borderColor.copy(alpha = 0.5f))
                                         }
-                                        Divider(color = borderColor.copy(alpha = 0.5f))
                                 }
+                        } else {
+                                Spacer(modifier = Modifier.weight(1f))
                         }
                 }
         }

@@ -11,9 +11,11 @@ import com.oneatom.onebrowser.ui.theme.ThemeMode
 import java.net.URLEncoder
 import java.util.regex.Pattern
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class BrowserViewModel(application: Application) : AndroidViewModel(application) {
@@ -57,6 +59,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     // Search Suggestions
     private val _suggestions = MutableStateFlow<List<String>>(emptyList())
     val suggestions: StateFlow<List<String>> = _suggestions.asStateFlow()
+    private var searchJob: Job? = null
 
     init {
         // Load settings from DataStore
@@ -212,53 +215,70 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // Search Suggestions
     fun fetchSuggestions(query: String) {
-        if (query.length < 2) {
+        searchJob?.cancel()
+
+        if (query.isEmpty()) {
             _suggestions.value = emptyList()
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val url =
-                        "https://suggestqueries.google.com/complete/search?client=firefox&q=${URLEncoder.encode(query, "UTF-8")}"
-                val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-                connection.connectTimeout = 1000
-                connection.readTimeout = 1000
+        if (query.length < 1) { // Allow single letter suggestions
+            // Do nothing or clear? If empty handled above, this might be redundant if < 1 means
+            // empty.
+            // But let's stay safe.
+            return
+        }
 
-                val stream = connection.inputStream
-                val reader = java.io.BufferedReader(java.io.InputStreamReader(stream))
-                val response = StringBuilder()
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    response.append(line)
-                }
-                reader.close()
+        searchJob =
+                viewModelScope.launch(Dispatchers.IO) {
+                    try {
+                        val url =
+                                "https://suggestqueries.google.com/complete/search?client=firefox&q=${URLEncoder.encode(query, "UTF-8")}"
+                        val connection =
+                                java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                        connection.connectTimeout = 1000
+                        connection.readTimeout = 1000
 
-                // Parse JSON array: ["query", ["suggestion1", "suggestion2", ...]]
-                val jsonString = response.toString()
-                val suggestions = mutableListOf<String>()
+                        val stream = connection.inputStream
+                        val reader = java.io.BufferedReader(java.io.InputStreamReader(stream))
+                        val response = StringBuilder()
+                        var line: String?
+                        while (reader.readLine().also { line = it } != null) {
+                            response.append(line)
+                        }
+                        reader.close()
 
-                // Simple regex parsing to avoid adding heavy JSON library for this one task
-                val matcher = Pattern.compile("\"([^\"]+)\"").matcher(jsonString)
-                // Skip the first match which is the query itself
-                if (matcher.find()) {
-                    while (matcher.find()) {
-                        val suggestion = matcher.group(1)
-                        if (suggestion != null && !suggestion.startsWith("http")) {
-                            suggestions.add(suggestion)
+                        // Parse JSON array: ["query", ["suggestion1", "suggestion2", ...]]
+                        val jsonString = response.toString()
+                        val suggestions = mutableListOf<String>()
+
+                        // Simple regex parsing to avoid adding heavy JSON library for this one task
+                        val matcher = Pattern.compile("\"([^\"]+)\"").matcher(jsonString)
+                        // Skip the first match which is the query itself
+                        if (matcher.find()) {
+                            while (matcher.find()) {
+                                val suggestion = matcher.group(1)
+                                if (suggestion != null && !suggestion.startsWith("http")) {
+                                    suggestions.add(suggestion)
+                                }
+                            }
+                        }
+
+                        if (isActive) {
+                            _suggestions.value = suggestions.take(5)
+                        }
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        e.printStackTrace()
+                        if (isActive) {
+                            _suggestions.value = emptyList()
                         }
                     }
                 }
-
-                _suggestions.value = suggestions.take(5)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                _suggestions.value = emptyList()
-            }
-        }
     }
 
     fun clearSuggestions() {
+        searchJob?.cancel()
         _suggestions.value = emptyList()
     }
 
