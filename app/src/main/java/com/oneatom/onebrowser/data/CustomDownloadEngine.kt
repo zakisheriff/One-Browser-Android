@@ -133,13 +133,7 @@ object CustomDownloadEngine {
             updateNotification(context)
             updateList() // Added
 
-            val file =
-                    File(
-                            Environment.getExternalStoragePublicDirectory(
-                                    Environment.DIRECTORY_DOWNLOADS
-                            ),
-                            filename
-                    )
+            val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), filename)
 
             // Check for existing partial file for Resume
             var startByte = 0L

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.oneatom.onebrowser.data.DownloadStatus
 import com.oneatom.onebrowser.data.DownloadTracker
 import com.oneatom.onebrowser.ui.theme.*
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -80,11 +81,12 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
                                                                                 Intent(
                                                                                         Intent.ACTION_VIEW
                                                                                 )
-                                                                        val fileUri =
+                                                                        val fileUri: Uri? =
                                                                                 try {
                                                                                         if (item.id >
                                                                                                         0
                                                                                         ) {
+                                                                                                // System Download
                                                                                                 (context.getSystemService(
                                                                                                                 Context.DOWNLOAD_SERVICE
                                                                                                         ) as
@@ -93,34 +95,81 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
                                                                                                                 item.id
                                                                                                         )
                                                                                         } else {
-                                                                                                if (item.uri !=
-                                                                                                                null
-                                                                                                )
-                                                                                                        Uri.parse(
-                                                                                                                item.uri
-                                                                                                        )
-                                                                                                else
+                                                                                                // Custom Download - Use FileProvider
+                                                                                                // Custom Download - Use FileProvider
+                                                                                                val file =
+                                                                                                        java.io
+                                                                                                                .File(
+                                                                                                                        context.getExternalFilesDir(
+                                                                                                                                android.os
+                                                                                                                                        .Environment
+                                                                                                                                        .DIRECTORY_DOWNLOADS
+                                                                                                                        ),
+                                                                                                                        item.title
+                                                                                                                )
+                                                                                                if (file.exists()
+                                                                                                ) {
+                                                                                                        androidx.core
+                                                                                                                .content
+                                                                                                                .FileProvider
+                                                                                                                .getUriForFile(
+                                                                                                                        context,
+                                                                                                                        context.packageName +
+                                                                                                                                ".fileprovider",
+                                                                                                                        file
+                                                                                                                )
+                                                                                                } else {
                                                                                                         null
+                                                                                                }
                                                                                         }
                                                                                 } catch (
                                                                                         e:
                                                                                                 Exception) {
-                                                                                        if (item.uri !=
-                                                                                                        null
-                                                                                        )
-                                                                                                Uri.parse(
-                                                                                                        item.uri
-                                                                                                )
-                                                                                        else null
+                                                                                        null
                                                                                 }
 
                                                                         if (fileUri != null) {
+                                                                                // MIME type
+                                                                                // detection
+                                                                                var mimeType =
+                                                                                        item.mediaType
+                                                                                if (mimeType ==
+                                                                                                null ||
+                                                                                                mimeType ==
+                                                                                                        "application/octet-stream"
+                                                                                ) {
+                                                                                        val ext =
+                                                                                                android.webkit
+                                                                                                        .MimeTypeMap
+                                                                                                        .getFileExtensionFromUrl(
+                                                                                                                item.title
+                                                                                                        )
+                                                                                        mimeType =
+                                                                                                android.webkit
+                                                                                                        .MimeTypeMap
+                                                                                                        .getSingleton()
+                                                                                                        .getMimeTypeFromExtension(
+                                                                                                                ext
+                                                                                                        )
+                                                                                }
+                                                                                if (item.title
+                                                                                                .endsWith(
+                                                                                                        ".apk"
+                                                                                                )
+                                                                                ) {
+                                                                                        mimeType =
+                                                                                                "application/vnd.android.package-archive"
+                                                                                }
+
                                                                                 intent.setDataAndType(
                                                                                         fileUri,
-                                                                                        item.mediaType
+                                                                                        mimeType
                                                                                 )
                                                                                 intent.addFlags(
                                                                                         Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                                                                )
+                                                                                intent.addFlags(
+                                                                                        Intent.FLAG_ACTIVITY_NEW_TASK
                                                                                 )
                                                                                 context.startActivity(
                                                                                         intent
@@ -134,6 +183,7 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
                                                                                         .show()
                                                                         }
                                                                 } catch (e: Exception) {
+                                                                        e.printStackTrace()
                                                                         Toast.makeText(
                                                                                         context,
                                                                                         "Cannot open file",
