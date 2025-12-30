@@ -55,6 +55,8 @@ fun BottomToolbar(
         onStop: () -> Unit,
         onOpenTabs: () -> Unit,
         onOpenMenu: () -> Unit,
+        onSwipeNext: () -> Unit,
+        onSwipePrevious: () -> Unit,
         modifier: Modifier = Modifier
 ) {
         val backgroundColor = if (isDarkTheme) DarkInputBackground else LightInputBackground
@@ -77,7 +79,37 @@ fun BottomToolbar(
                 }
 
         Row(
-                modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+                modifier =
+                        modifier.fillMaxWidth()
+                                .pointerInput(Unit) {
+                                        detectDragGestures { change, dragAmount ->
+                                                val (x, y) = dragAmount
+                                                // Determine dominant axis
+                                                if (kotlin.math.abs(x) > kotlin.math.abs(y)) {
+                                                        // Horizontal swipe
+                                                        if (kotlin.math.abs(x) > 10) { // Threshold
+                                                                if (x > 0) {
+                                                                        // Swipe Right (L->R) ->
+                                                                        // Previous Tab
+                                                                        onSwipePrevious()
+                                                                } else {
+                                                                        // Swipe Left (R->L) -> Next
+                                                                        // Tab
+                                                                        onSwipeNext()
+                                                                }
+                                                                change.consume()
+                                                        }
+                                                } else {
+                                                        // Vertical swipe
+                                                        if (y < -10
+                                                        ) { //  Simple threshold for swipe up
+                                                                onOpenTabs()
+                                                                change.consume()
+                                                        }
+                                                }
+                                        }
+                                }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -137,24 +169,6 @@ fun BottomToolbar(
                                         .clip(RoundedCornerShape(22.dp))
                                         .background(backgroundColor)
                                         .border(1.dp, borderColor, RoundedCornerShape(22.dp))
-                                        .pointerInput(Unit) {
-                                                detectDragGestures { change, dragAmount ->
-                                                        val (x, y) = dragAmount
-                                                        if (y < -10
-                                                        ) { // Simple threshold for swipe up
-                                                                onOpenTabs()
-                                                        }
-                                                        // Don't consume so click can potentially
-                                                        // still work if it wasn't a drag?
-                                                        // Actually detecting drag usually consumes
-                                                        // the events preventing click
-                                                        // This might need refinement but let's try
-                                                        // this standard approach
-                                                        if (java.lang.Math.abs(y) > 5) {
-                                                                change.consume()
-                                                        }
-                                                }
-                                        }
                                         .clickable { onSearchFocusChange(true) }
                                         .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,

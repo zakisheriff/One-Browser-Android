@@ -12,6 +12,7 @@ import com.oneatom.onebrowser.data.ToolbarPosition
 import com.oneatom.onebrowser.ui.components.*
 import com.oneatom.onebrowser.ui.theme.*
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun BrowserScreen(
         tabs: List<Tab>,
@@ -38,6 +39,8 @@ fun BrowserScreen(
         onCloseDownloads: () -> Unit,
         onOpenSettings: () -> Unit,
         onOpenAbout: () -> Unit,
+        onSwipeNext: () -> Unit,
+        onSwipePrevious: () -> Unit,
         suggestions: List<String>,
         onQueryChange: (String) -> Unit,
         onUpdateTab: (String, Tab.() -> Tab) -> Unit,
@@ -59,9 +62,38 @@ fun BrowserScreen(
         // Main content
         Column(modifier = Modifier.fillMaxSize()) {
             // WebView content - takes most of the space
+            // WebView content - takes most of the space
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                tabs.forEach { tab ->
-                    if (tab.id == activeTabId) {
+                val activeIndex = tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
+                val pagerState =
+                        androidx.compose.foundation.pager.rememberPagerState(
+                                initialPage = activeIndex,
+                                pageCount = { tabs.size }
+                        )
+
+                // Sync activeTabId -> Pager
+                LaunchedEffect(activeTabId) {
+                    if (activeTabId != null && tabs.isNotEmpty()) {
+                        val index = tabs.indexOfFirst { it.id == activeTabId }
+                        if (index >= 0 && index != pagerState.currentPage) {
+                            pagerState.scrollToPage(index)
+                        }
+                    }
+                }
+
+                // Sync Pager -> activeTabId (if we allowed swiping, but we disabled it for now to
+                // avoid conflict)
+                // However, navigation actions from Navbar will update activeTabId, which updates
+                // Pager.
+
+                androidx.compose.foundation.pager.HorizontalPager(
+                        state = pagerState,
+                        userScrollEnabled =
+                                false, // Disable content swipe to avoid conflict with web content
+                        modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    val tab = tabs.getOrNull(page)
+                    if (tab != null) {
                         key(tab.id) {
                             WebViewContainer(
                                     tab = tab,
@@ -89,7 +121,9 @@ fun BrowserScreen(
                                     },
                                     onNavigate = onNavigate,
                                     onOpenSettings = onOpenSettings,
-                                    navigationActions = navigationActions,
+                                    navigationActions =
+                                            if (tab.id == activeTabId) navigationActions
+                                            else null, // Only pass actions to active tab
                                     modifier = Modifier.padding(horizontal = 4.dp)
                             )
                         }
@@ -124,7 +158,9 @@ fun BrowserScreen(
                         onReload = onReload,
                         onStop = onStop,
                         onOpenTabs = { isTabSwitcherOpen = true },
-                        onOpenMenu = onOpenMenu
+                        onOpenMenu = onOpenMenu,
+                        onSwipeNext = onSwipeNext,
+                        onSwipePrevious = onSwipePrevious
                 )
             }
         }

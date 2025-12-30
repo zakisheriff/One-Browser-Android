@@ -160,6 +160,34 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun switchToNextTab() {
+        val currentTabs = _tabs.value
+        val activeId = _activeTabId.value ?: return
+        val currentIndex = currentTabs.indexOfFirst { it.id == activeId }
+
+        if (currentIndex != -1) {
+            if (currentIndex < currentTabs.size - 1) {
+                _activeTabId.value = currentTabs[currentIndex + 1].id
+            } else {
+                // Last tab -> Create new tab ONLY if current tab is not already a new empty tab
+                val currentTab = currentTabs[currentIndex]
+                if (currentTab.url.isNotEmpty()) {
+                    addTab()
+                }
+            }
+        }
+    }
+
+    fun switchToPreviousTab() {
+        val currentTabs = _tabs.value
+        val activeId = _activeTabId.value ?: return
+        val currentIndex = currentTabs.indexOfFirst { it.id == activeId }
+
+        if (currentIndex > 0) {
+            _activeTabId.value = currentTabs[currentIndex - 1].id
+        }
+    }
+
     fun updateTab(tabId: String, update: Tab.() -> Tab) {
         _tabs.value = _tabs.value.map { tab -> if (tab.id == tabId) tab.update() else tab }
     }

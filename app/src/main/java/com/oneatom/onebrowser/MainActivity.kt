@@ -89,6 +89,8 @@ class MainActivity : ComponentActivity() {
                         onCloseDownloads = viewModel::onCloseDownloads,
                         onOpenSettings = viewModel::openSettings,
                         onOpenAbout = { /* TODO: Show about dialog */},
+                        onSwipeNext = viewModel::switchToNextTab,
+                        onSwipePrevious = viewModel::switchToPreviousTab,
                         onUpdateTab = viewModel::updateTab,
                         navigationActions = navigationActions,
                         modifier = Modifier.fillMaxSize().systemBarsPadding()
