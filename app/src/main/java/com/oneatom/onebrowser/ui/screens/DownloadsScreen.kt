@@ -17,7 +17,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -173,7 +174,7 @@ fun DownloadItemView(
         item: DownloadStatus,
         isDarkTheme: Boolean,
         onClick: () -> Unit,
-        onCancel: () -> Unit,
+        onCancel: () -> Unit, // Explicit Cancellation (Delete)
         onDelete: () -> Unit
 ) {
         val textColor = if (isDarkTheme) DarkText else LightText
@@ -182,13 +183,13 @@ fun DownloadItemView(
 
         Row(
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
         ) {
                 Icon(
                         imageVector = Icons.Default.InsertDriveFile,
                         contentDescription = null,
                         tint = mutedColor,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(40.dp)
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -198,7 +199,8 @@ fun DownloadItemView(
                                 item.title,
                                 color = textColor,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleMedium
                         )
 
                         val statusText =
@@ -206,7 +208,6 @@ fun DownloadItemView(
                                         DownloadManager.STATUS_RUNNING -> {
                                                 val speed = item.getSpeedString(context)
                                                 val eta = item.getEtaString()
-                                                // Format: 5MB / 10MB (50%) • 2MB/s • 10s left
                                                 val downloaded =
                                                         Formatter.formatFileSize(
                                                                 context,
@@ -248,44 +249,153 @@ fun DownloadItemView(
                                                         .height(4.dp)
                                 )
                         }
+
+                        // Action Buttons Row (Below the file info)
+                        Row(modifier = Modifier.padding(top = 12.dp)) {
+                                if (item.status == DownloadManager.STATUS_RUNNING ||
+                                                item.status == DownloadManager.STATUS_PENDING
+                                ) {
+                                        // Pause Button (Stops/Cancels for now, but user requested
+                                        // 'Pause')
+                                        Button(
+                                                onClick = onCancel,
+                                                colors =
+                                                        ButtonDefaults.buttonColors(
+                                                                containerColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .primaryContainer
+                                                        ),
+                                                contentPadding =
+                                                        PaddingValues(
+                                                                horizontal = 12.dp,
+                                                                vertical = 6.dp
+                                                        ),
+                                                modifier =
+                                                        Modifier.padding(end = 8.dp).height(32.dp)
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.Pause,
+                                                        contentDescription = "Pause",
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = textColor
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                        "Pause",
+                                                        color = textColor,
+                                                        style = MaterialTheme.typography.labelMedium
+                                                )
+                                        }
+
+                                        // Cancel Button (Explicit Delete)
+                                        Button(
+                                                onClick = onCancel,
+                                                colors =
+                                                        ButtonDefaults.buttonColors(
+                                                                containerColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .errorContainer
+                                                        ),
+                                                contentPadding =
+                                                        PaddingValues(
+                                                                horizontal = 12.dp,
+                                                                vertical = 6.dp
+                                                        ),
+                                                modifier = Modifier.height(32.dp)
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.Close,
+                                                        contentDescription = "Cancel",
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = textColor
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                        "Cancel",
+                                                        color = textColor,
+                                                        style = MaterialTheme.typography.labelMedium
+                                                )
+                                        }
+                                } else if (item.status == DownloadManager.STATUS_PAUSED ||
+                                                item.status == DownloadManager.STATUS_FAILED
+                                ) {
+                                        // Resume Button
+                                        Button(
+                                                onClick = {
+                                                        DownloadTracker.restartDownload(
+                                                                context,
+                                                                item
+                                                        )
+                                                },
+                                                colors =
+                                                        ButtonDefaults.buttonColors(
+                                                                containerColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .primaryContainer
+                                                        ),
+                                                contentPadding =
+                                                        PaddingValues(
+                                                                horizontal = 12.dp,
+                                                                vertical = 6.dp
+                                                        ),
+                                                modifier =
+                                                        Modifier.padding(end = 8.dp).height(32.dp)
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.PlayArrow,
+                                                        contentDescription = "Resume",
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = textColor
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                        "Resume",
+                                                        color = textColor,
+                                                        style = MaterialTheme.typography.labelMedium
+                                                )
+                                        }
+
+                                        // Cancel (Delete)
+                                        Button(
+                                                onClick = onDelete,
+                                                colors =
+                                                        ButtonDefaults.buttonColors(
+                                                                containerColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .errorContainer
+                                                        ),
+                                                contentPadding =
+                                                        PaddingValues(
+                                                                horizontal = 12.dp,
+                                                                vertical = 6.dp
+                                                        ),
+                                                modifier = Modifier.height(32.dp)
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.Close,
+                                                        contentDescription = "Cancel",
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = textColor
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                        "Cancel",
+                                                        color = textColor,
+                                                        style = MaterialTheme.typography.labelMedium
+                                                )
+                                        }
+                                }
+                        }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Actions
-                if (item.status == DownloadManager.STATUS_RUNNING ||
-                                item.status == DownloadManager.STATUS_PENDING
-                ) {
-                        IconButton(onClick = onCancel) {
-                                Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Cancel",
-                                        tint = textColor
-                                )
-                        }
-                } else if (item.status == DownloadManager.STATUS_PAUSED ||
-                                item.status == DownloadManager.STATUS_FAILED
-                ) {
-                        // Resume / Retry Logic
-                        IconButton(onClick = { DownloadTracker.restartDownload(context, item) }) {
-                                Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "Resume/Retry",
-                                        tint = textColor
-                                )
-                        }
-                        // Allow delete as well for failed/paused? Yes
+                // Keep the right side clear or maybe put the Delete for completed there?
+                // Actually user said 'below the file', implying the info.
+                // For 'Completed', maybe just a simple delete icon on right is fine, or below?
+                // User focus was on Running/Paused controls.
+                if (item.status == DownloadManager.STATUS_SUCCESSFUL) {
                         IconButton(onClick = onDelete) {
                                 Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete",
-                                        tint = textColor
-                                )
-                        }
-                } else if (item.status == DownloadManager.STATUS_SUCCESSFUL) {
-                        IconButton(onClick = onDelete) {
-                                Icon(
-                                        imageVector = Icons.Default.Delete,
+                                        Icons.Default.Delete,
                                         contentDescription = "Delete",
                                         tint = textColor
                                 )
