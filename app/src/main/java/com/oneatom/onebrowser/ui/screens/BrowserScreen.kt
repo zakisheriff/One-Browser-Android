@@ -1,5 +1,6 @@
 package com.oneatom.onebrowser.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -58,6 +59,16 @@ fun BrowserScreen(
         var isSearchFocused by remember { mutableStateOf(false) }
         // Track if tab switcher is open
         var isTabSwitcherOpen by remember { mutableStateOf(false) }
+
+        // Handle Back Press for Overlays
+        BackHandler(enabled = isSearchFocused || isTabSwitcherOpen) {
+                if (isSearchFocused) {
+                        isSearchFocused = false
+                        onQueryChange("")
+                } else {
+                        isTabSwitcherOpen = false
+                }
+        }
 
         Box(modifier = modifier.fillMaxSize().background(backgroundColor)) {
                 // Main content
