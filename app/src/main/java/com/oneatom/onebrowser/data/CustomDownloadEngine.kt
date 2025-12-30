@@ -151,10 +151,21 @@ object CustomDownloadEngine {
 
                 val response = client.newCall(request).execute()
                 if (!response.isSuccessful) {
+                    if (response.code == 416 && startByte > 0) {
+                        // Range not satisfiable - File might be fully downloaded or changed.
+                        // Restart.
+                        response.close()
+                        file.delete()
+                        startByte = 0
+                        downloadedBytes = 0
+                        // Retry without range
+                        run(context)
+                        return
+                    }
                     status = STATUS_FAILED
                     isRunning = false
                     updateNotification(context)
-                    updateList() // Added
+                    updateList()
                     return
                 }
 
