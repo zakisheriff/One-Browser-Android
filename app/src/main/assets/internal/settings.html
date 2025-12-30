@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Settings - One Browser</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .mobile-nav {
+            display: none;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .mobile-nav-items {
+            display: flex;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .mobile-nav-item {
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .mobile-nav-item.active {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-nav {
+                display: block;
+            }
+
+            .settings-sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav">
+        <div class="mobile-nav-items" id="mobile-nav">
+            <button class="mobile-nav-item active" data-section="general">General</button>
+            <button class="mobile-nav-item" data-section="appearance">Appearance</button>
+            <button class="mobile-nav-item" data-section="search">Search</button>
+            <button class="mobile-nav-item" data-section="privacy">Privacy</button>
+            <button class="mobile-nav-item" data-section="about">About</button>
+        </div>
+    </div>
+
+    <div class="settings-container">
+        <!-- Sidebar -->
+        <div class="settings-sidebar">
+            <h2 style="margin-bottom: 24px;">Settings</h2>
+            <nav id="settings-nav">
+                <div class="settings-nav-item active" data-section="general">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    General
+                </div>
+                <div class="settings-nav-item" data-section="appearance">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" />
+                        <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                    Appearance
+                </div>
+                <div class="settings-nav-item" data-section="search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    Search Engine
+                </div>
+                <div class="settings-nav-item" data-section="privacy">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    Privacy & Security
+                </div>
+                <div class="settings-nav-item" data-section="about">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    About
+                </div>
+            </nav>
+        </div>
+
+        <!-- Content -->
+        <div class="settings-content">
+            <!-- General Section -->
+            <div id="section-general" class="settings-section fade-in">
+                <h2 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    General Settings
+                </h2>
+
+                <div class="settings-option">
+                    <div class="settings-option-row">
+                        <div>
+                            <div class="settings-option-label">Show Home Button</div>
+                            <div class="settings-option-desc">Display home button in the toolbar</div>
+                        </div>
+                        <div class="toggle active" id="toggle-home"></div>
+                    </div>
+                </div>
+
+                <div class="settings-option">
+                    <div class="settings-option-row">
+                        <div>
+                            <div class="settings-option-label">Toolbar Position</div>
+                            <div class="settings-option-desc">Choose where to display the toolbar</div>
+                        </div>
+                    </div>
+                    <div class="radio-group" style="margin-top: 12px;">
+                        <div class="radio-option" data-value="bottom">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">Bottom</div>
+                                <div class="settings-option-desc">Modern / Mobile-style</div>
+                            </div>
+                        </div>
+                        <div class="radio-option selected" data-value="top">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">Top</div>
+                                <div class="settings-option-desc">Classic desktop layout</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appearance Section -->
+            <div id="section-appearance" class="settings-section fade-in" style="display: none;">
+                <h2 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                    Appearance
+                </h2>
+
+                <div class="settings-option">
+                    <div class="settings-option-row">
+                        <div>
+                            <div class="settings-option-label">Theme</div>
+                            <div class="settings-option-desc">Choose your preferred theme</div>
+                        </div>
+                    </div>
+                    <div class="radio-group" id="theme-options" style="margin-top: 12px;">
+                        <div class="radio-option selected" data-value="dark">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">Dark</div>
+                                <div class="settings-option-desc">Pure black background</div>
+                            </div>
+                        </div>
+                        <div class="radio-option" data-value="light">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">Light</div>
+                                <div class="settings-option-desc">Pure white background</div>
+                            </div>
+                        </div>
+                        <div class="radio-option" data-value="system">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">System</div>
+                                <div class="settings-option-desc">Match device settings</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Section -->
+            <div id="section-search" class="settings-section fade-in" style="display: none;">
+                <h2 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    Search Engine
+                </h2>
+
+                <div class="settings-option">
+                    <div class="settings-option-row">
+                        <div>
+                            <div class="settings-option-label">Default Search Engine</div>
+                            <div class="settings-option-desc">Used for address bar searches</div>
+                        </div>
+                    </div>
+                    <div class="radio-group" id="search-options" style="margin-top: 12px;">
+                        <div class="radio-option selected" data-value="google">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">Google</div>
+                            </div>
+                        </div>
+                        <div class="radio-option" data-value="bing">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">Bing</div>
+                            </div>
+                        </div>
+                        <div class="radio-option" data-value="duckduckgo">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">DuckDuckGo</div>
+                            </div>
+                        </div>
+                        <div class="radio-option" data-value="brave">
+                            <div class="radio-circle"></div>
+                            <div>
+                                <div class="settings-option-label">Brave Search</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Section -->
+            <div id="section-privacy" class="settings-section fade-in" style="display: none;">
+                <h2 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    Privacy & Security
+                </h2>
+
+                <div class="settings-option">
+                    <div class="settings-option-row">
+                        <div>
+                            <div class="settings-option-label">Block Third-Party Cookies</div>
+                            <div class="settings-option-desc">Prevent tracking across websites</div>
+                        </div>
+                        <div class="toggle active" id="toggle-cookies"></div>
+                    </div>
+                </div>
+
+                <div class="settings-option">
+                    <div class="settings-option-row">
+                        <div>
+                            <div class="settings-option-label">Do Not Track</div>
+                            <div class="settings-option-desc">Request websites not to track you</div>
+                        </div>
+                        <div class="toggle" id="toggle-dnt"></div>
+                    </div>
+                </div>
+
+                <div class="settings-option">
+                    <button class="btn" style="width: 100%; margin-top: 8px;">
+                        Clear Browsing Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- About Section -->
+            <div id="section-about" class="settings-section fade-in" style="display: none;">
+                <h2 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    About One Browser
+                </h2>
+
+                <div class="settings-option">
+                    <div style="text-align: center; padding: 32px;">
+                        <svg width="64" height="64" viewBox="0 0 108 108" style="margin-bottom: 16px;">
+                            <circle fill="var(--muted)" opacity="0.2" cx="54" cy="54" r="50" />
+                            <path fill="var(--text)"
+                                d="M54,24c-16.569,0 -30,13.431 -30,30s13.431,30 30,30 30,-13.431 30,-30 -13.431,-30 -30,-30zM54,80c-14.359,0 -26,-11.641 -26,-26s11.641,-26 26,-26 26,11.641 26,26 -11.641,26 -26,26z" />
+                            <path fill="var(--text)"
+                                d="M54,28c-2.209,0 -4,11.641 -4,26s1.791,26 4,26 4,-11.641 4,-26 -1.791,-26 -4,-26z" />
+                            <path fill="var(--text)"
+                                d="M28,54c0,2.209 11.641,4 26,4s26,-1.791 26,-4 -11.641,-4 -26,-4 -26,1.791 -26,4z" />
+                        </svg>
+                        <h3 style="font-size: 20px; margin-bottom: 8px;">One Browser</h3>
+                        <p style="margin-bottom: 4px;">Version 1.0.0</p>
+                        <p style="font-size: 12px; color: var(--muted);">Built with ❤️ by One Atom</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="bridge.js"></script>
+    <script>
+        // Section navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.settings-section').forEach(function (section) {
+                section.style.display = 'none';
+            });
+
+            // Show selected section
+            var section = document.getElementById('section-' + sectionId);
+            if (section) {
+                section.style.display = 'block';
+            }
+
+            // Update nav active state
+            document.querySelectorAll('.settings-nav-item').forEach(function (item) {
+                item.classList.remove('active');
+                if (item.getAttribute('data-section') === sectionId) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update mobile nav
+            document.querySelectorAll('.mobile-nav-item').forEach(function (item) {
+                item.classList.remove('active');
+                if (item.getAttribute('data-section') === sectionId) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        // Sidebar nav clicks
+        document.querySelectorAll('.settings-nav-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                showSection(this.getAttribute('data-section'));
+            });
+        });
+
+        // Mobile nav clicks
+        document.querySelectorAll('.mobile-nav-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                showSection(this.getAttribute('data-section'));
+            });
+        });
+
+        // Toggle switches
+        document.querySelectorAll('.toggle').forEach(function (toggle) {
+            toggle.addEventListener('click', function () {
+                this.classList.toggle('active');
+                OneBrowserBridge.log('Toggle ' + this.id + ': ' + this.classList.contains('active'));
+            });
+        });
+
+        // Radio options
+        document.querySelectorAll('.radio-group').forEach(function (group) {
+            group.querySelectorAll('.radio-option').forEach(function (option) {
+                option.addEventListener('click', function () {
+                    // Remove selected from all in group
+                    group.querySelectorAll('.radio-option').forEach(function (opt) {
+                        opt.classList.remove('selected');
+                    });
+                    // Add selected to clicked
+                    this.classList.add('selected');
+
+                    var value = this.getAttribute('data-value');
+                    OneBrowserBridge.log('Selected: ' + value);
+
+                    // Handle theme change
+                    if (group.id === 'theme-options') {
+                        document.documentElement.className = value === 'system' ? 'dark' : value;
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

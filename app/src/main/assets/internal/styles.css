@@ -1,0 +1,479 @@
+/* One Browser - Shared Styles
+   Pure Monochrome Design System
+   Based on desktop Electron renderer
+*/
+
+:root {
+    /* Dark Mode (default) */
+    --bg: #000000;
+    --text: #ffffff;
+    --muted: #888888;
+    --border: #222222;
+    --hover: #111111;
+    
+    /* Glass effects */
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    
+    /* Input backgrounds */
+    --input-bg: rgba(255, 255, 255, 0.05);
+    
+    /* Scrollbar */
+    --scrollbar: rgba(255, 255, 255, 0.2);
+    
+    /* Spacing */
+    --radius: 32px;
+    --radius-sm: 16px;
+    --radius-xs: 8px;
+}
+
+/* Light mode */
+html.light {
+    --bg: #ffffff;
+    --text: #000000;
+    --muted: #666666;
+    --border: #e0e0e0;
+    --hover: #f5f5f5;
+    
+    --glass-bg: rgba(0, 0, 0, 0.03);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --input-bg: rgba(0, 0, 0, 0.05);
+    --scrollbar: rgba(0, 0, 0, 0.2);
+}
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    overflow-y: auto;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar);
+    opacity: 0.8;
+}
+
+/* Glass panels */
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+}
+
+/* Container */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+/* Typography */
+h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.btn:hover {
+    background: var(--hover);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+/* Input fields */
+.input {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 16px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.input:focus {
+    border-color: var(--muted);
+}
+
+.input::placeholder {
+    color: var(--muted);
+    opacity: 0.6;
+}
+
+/* Cards */
+.card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    transition: all 0.15s ease;
+}
+
+.card:hover {
+    background: var(--hover);
+}
+
+/* Quick links grid */
+.quick-links {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .quick-links {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.quick-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    color: var(--text);
+}
+
+.quick-link:hover {
+    background: var(--hover);
+}
+
+.quick-link:active {
+    transform: scale(0.98);
+}
+
+.quick-link-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.quick-link-name {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* Feature cards */
+.feature-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .feature-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+.feature-card {
+    padding: 20px;
+    border-radius: var(--radius-sm);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+}
+
+.feature-card:hover {
+    background: var(--hover);
+}
+
+.feature-card-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 12px;
+    color: var(--muted);
+}
+
+.feature-card-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.feature-card-desc {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* Settings page specific */
+.settings-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.settings-sidebar {
+    width: 260px;
+    padding: 24px;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.settings-content {
+    flex: 1;
+    padding: 32px;
+    overflow-y: auto;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.settings-nav-item:hover {
+    background: var(--hover);
+    color: var(--text);
+}
+
+.settings-nav-item.active {
+    background: var(--input-bg);
+    color: var(--text);
+}
+
+.settings-section {
+    margin-bottom: 32px;
+}
+
+.settings-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.settings-option {
+    padding: 16px;
+    border-radius: var(--radius-xs);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+}
+
+.settings-option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-option-label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.settings-option-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+/* Toggle switch */
+.toggle {
+    position: relative;
+    width: 48px;
+    height: 28px;
+    background: var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toggle.active {
+    background: var(--text);
+}
+
+.toggle::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 20px;
+    height: 20px;
+    background: var(--bg);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.toggle.active::after {
+    transform: translateX(20px);
+}
+
+/* Radio options */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.radio-option:hover {
+    background: var(--hover);
+}
+
+.radio-circle {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.radio-option.selected .radio-circle {
+    border-color: var(--text);
+}
+
+.radio-option.selected .radio-circle::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--text);
+    border-radius: 50%;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .settings-container {
+        flex-direction: column;
+    }
+    
+    .settings-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .settings-content {
+        padding: 24px;
+    }
+    
+    .container {
+        padding: 16px;
+    }
+}

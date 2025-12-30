@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>New Tab</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        html,
+        body {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .ntp-container {
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            padding-top: 16px;
+            padding-bottom: 120px;
+            /* Space for keyboard */
+        }
+
+        .ntp-header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .ntp-logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 12px;
+        }
+
+        .ntp-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .ntp-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .ntp-search {
+            width: 100%;
+            max-width: 560px;
+            margin: 20px auto;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg);
+            padding: 8px 0;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            transition: all 0.15s ease;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--muted);
+            background: var(--hover);
+        }
+
+        .search-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: var(--text);
+            min-height: 24px;
+        }
+
+        .search-input::placeholder {
+            color: var(--muted);
+            opacity: 0.6;
+        }
+
+        .ntp-content {
+            flex: 1;
+            max-width: 640px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ntp-section {
+            margin-bottom: 24px;
+        }
+
+        /* Keyboard open state */
+        .keyboard-open .ntp-header {
+            display: none;
+        }
+
+        .keyboard-open .ntp-search {
+            margin-top: 0;
+        }
+
+        .keyboard-open .ntp-content {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ntp-container fade-in" id="ntp-container">
+        <!-- Header with logo -->
+        <div class="ntp-header">
+            <div id="engine-logo" class="ntp-logo">
+                <svg viewBox="0 0 24 24" width="64" height="64">
+                    <path fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+            </div>
+            <h1 id="engine-name" class="ntp-title">Google</h1>
+            <p class="ntp-subtitle">Powered by One Browser</p>
+        </div>
+
+        <!-- Search Box - Sticky at top -->
+        <div class="ntp-search" id="search-container">
+            <form id="search-form" class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" id="search-input" class="search-input" placeholder="Search Google or type a URL"
+                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+            </form>
+        </div>
+
+        <!-- Content -->
+        <div class="ntp-content">
+            <!-- Quick Links -->
+            <div class="ntp-section">
+                <h2 class="section-title">Quick Links</h2>
+                <div class="quick-links" id="quick-links">
+                    <!-- Google -->
+                    <a href="#" class="quick-link" data-url="https://www.google.com">
+                        <svg class="quick-link-icon" viewBox="0 0 24 24">
+                            <path fill="#4285F4"
+                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853"
+                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05"
+                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                            <path fill="#EA4335"
+                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        <span class="quick-link-name">Google</span>
+                    </a>
+
+                    <!-- YouTube -->
+                    <a href="#" class="quick-link" data-url="https://www.youtube.com">
+                        <svg class="quick-link-icon" viewBox="0 0 24 24">
+                            <path fill="#FF0000"
+                                d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                        </svg>
+                        <span class="quick-link-name">YouTube</span>
+                    </a>
+
+                    <!-- ChatGPT -->
+                    <a href="#" class="quick-link" data-url="https://chatgpt.com">
+                        <svg class="quick-link-icon" viewBox="0 0 24 24">
+                            <path fill="#10A37F"
+                                d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494z" />
+                        </svg>
+                        <span class="quick-link-name">ChatGPT</span>
+                    </a>
+
+                    <!-- Gemini -->
+                    <a href="#" class="quick-link" data-url="https://gemini.google.com">
+                        <svg class="quick-link-icon" viewBox="0 0 24 24">
+                            <defs>
+                                <linearGradient id="geminiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#1A73E8" />
+                                    <stop offset="50%" stop-color="#8E24AA" />
+                                    <stop offset="100%" stop-color="#EA4335" />
+                                </linearGradient>
+                            </defs>
+                            <circle fill="url(#geminiGrad)" cx="12" cy="12" r="10" />
+                        </svg>
+                        <span class="quick-link-name">Gemini</span>
+                    </a>
+
+                    <!-- Instagram -->
+                    <a href="#" class="quick-link" data-url="https://www.instagram.com">
+                        <svg class="quick-link-icon" viewBox="0 0 24 24">
+                            <defs>
+                                <linearGradient id="instaGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#FFDC80" />
+                                    <stop offset="25%" stop-color="#F77737" />
+                                    <stop offset="50%" stop-color="#E1306C" />
+                                    <stop offset="75%" stop-color="#C13584" />
+                                    <stop offset="100%" stop-color="#833AB4" />
+                                </linearGradient>
+                            </defs>
+                            <path fill="url(#instaGrad)"
+                                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                        </svg>
+                        <span class="quick-link-name">Instagram</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="ntp-section">
+                <div class="feature-cards">
+                    <button class="feature-card" onclick="OneBrowserBridge.log('Bookmarks clicked')">
+                        <svg class="feature-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon
+                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                        <h3 class="feature-card-title">Bookmarks</h3>
+                        <p class="feature-card-desc">Save your favorites</p>
+                    </button>
+
+                    <button class="feature-card" onclick="OneBrowserBridge.log('History clicked')">
+                        <svg class="feature-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <h3 class="feature-card-title">History</h3>
+                        <p class="feature-card-desc">Private & local only</p>
+                    </button>
+
+                    <button class="feature-card" onclick="OneBrowserBridge.log('AI clicked')">
+                        <svg class="feature-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                        </svg>
+                        <h3 class="feature-card-title">AI Assistant</h3>
+                        <p class="feature-card-desc">Summarize, rewrite, explore</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="bridge.js"></script>
+    <script>
+        var searchInput = document.getElementById('search-input');
+        var container = document.getElementById('ntp-container');
+        var searchContainer = document.getElementById('search-container');
+
+        // Handle keyboard visibility
+        searchInput.addEventListener('focus', function () {
+            container.classList.add('keyboard-open');
+            // Scroll search bar into view
+            setTimeout(function () {
+                searchContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        });
+
+        searchInput.addEventListener('blur', function () {
+            container.classList.remove('keyboard-open');
+        });
+
+        // Detect virtual keyboard using viewport resize
+        var lastHeight = window.innerHeight;
+        window.addEventListener('resize', function () {
+            var currentHeight = window.innerHeight;
+            if (currentHeight < lastHeight - 100) {
+                // Keyboard likely opened
+                container.classList.add('keyboard-open');
+                searchContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else if (currentHeight > lastHeight + 100) {
+                // Keyboard likely closed
+                container.classList.remove('keyboard-open');
+            }
+            lastHeight = currentHeight;
+        });
+
+        // Search form handler
+        document.getElementById('search-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var query = searchInput.value.trim();
+            if (!query) return;
+
+            var url;
+            if (OneBrowserUtils.isUrl(query)) {
+                url = query.startsWith('http') ? query : 'https://' + query;
+            } else {
+                url = OneBrowserUtils.buildSearchUrl(query, 'google');
+            }
+
+            OneBrowserBridge.navigate(url);
+        });
+
+        // Quick links handler
+        document.querySelectorAll('.quick-link').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                var url = this.getAttribute('data-url');
+                OneBrowserBridge.navigate(url);
+            });
+        });
+    </script>
+</body>
+
+</html>

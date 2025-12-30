@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple browser icon: globe with meridians -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,24c-16.569,0 -30,13.431 -30,30s13.431,30 30,30 30,-13.431 30,-30 -13.431,-30 -30,-30zM54,80c-14.359,0 -26,-11.641 -26,-26s11.641,-26 26,-26 26,11.641 26,26 -11.641,26 -26,26z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28c-2.209,0 -4,11.641 -4,26s1.791,26 4,26 4,-11.641 4,-26 -1.791,-26 -4,-26z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,54c0,2.209 11.641,4 26,4s26,-1.791 26,-4 -11.641,-4 -26,-4 -26,1.791 -26,4z"/>
+</vector>
