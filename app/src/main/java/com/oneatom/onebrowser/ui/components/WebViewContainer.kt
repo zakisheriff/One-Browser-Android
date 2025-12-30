@@ -24,6 +24,9 @@ import com.oneatom.onebrowser.data.Tab
 import com.oneatom.onebrowser.ui.theme.DarkBackground
 import com.oneatom.onebrowser.ui.theme.LightBackground
 import com.oneatom.onebrowser.webview.OneBrowserJsInterface
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -50,9 +53,12 @@ fun WebViewContainer(
     val backgroundColor = if (isDarkTheme) DarkBackground else LightBackground
     val currentTabId = tab.id
 
-    // Fullscreen state
+    // State for Custom View (Fullscreen)
     var customView by remember { mutableStateOf<android.view.View?>(null) }
     var customViewCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
+
+    // Hoist WebView instance reference for fullscreen use
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
     // Helper to capture thumbnail
     fun captureWebView(view: WebView) {
@@ -68,7 +74,7 @@ fun WebViewContainer(
         }
     }
 
-    // Remember webview for this tab
+    // Initialize WebView
     val webView =
             remember(tab.id) {
                 WebView(context).apply {
@@ -78,60 +84,59 @@ fun WebViewContainer(
                                     ViewGroup.LayoutParams.MATCH_PARENT
                             )
 
-                    // Configure WebView settings for MOBILE rendering
-                    settings.apply {
-                        javaScriptEnabled = true
-                        domStorageEnabled = true
-                        databaseEnabled = true
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.databaseEnabled = true
 
-                        // Viewport settings for proper mobile rendering
-                        useWideViewPort = true // Allow viewport meta tag to work
-                        loadWithOverviewMode = true // Fit content to screen width
+                    // Zoom settings
+                    settings.useWideViewPort = true
+                    settings.loadWithOverviewMode = true
+                    try {
+                        // settings.setInitialScale(1) // Can be problematic on some devices
+                    } catch (e: Exception) {}
 
-                        // Set initial scale to 0 to let page decide
-                        setInitialScale(0)
+                    settings.setSupportZoom(true)
+                    settings.builtInZoomControls = true
+                    settings.displayZoomControls = false
 
-                        // Zoom settings
-                        setSupportZoom(true)
-                        builtInZoomControls = true
-                        displayZoomControls = false
+                    // Text size fix
+                    settings.textZoom = 100
 
-                        // Default text zoom
-                        textZoom = 100
+                    // File access
+                    settings.allowFileAccess = true
+                    settings.allowContentAccess = true
+                    try {
+                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    } catch (e: Exception) {}
 
-                        // File access
-                        allowFileAccess = true
-                        allowContentAccess = true
+                    settings.mediaPlaybackRequiresUserGesture = false
 
-                        // Mixed content and cache
-                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                        cacheMode = WebSettings.LOAD_DEFAULT
+                    // User Agent
+                    // Use a standard generic Android user agent or keep default
+                    val defaultUserAgent = settings.userAgentString
+                    settings.userAgentString = defaultUserAgent.replace("; wv", "")
 
-                        // Media
-                        mediaPlaybackRequiresUserGesture = false
-
-                        // Set Chrome-like mobile User Agent
-                        val mobileUserAgent =
-                                "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-                        userAgentString = mobileUserAgent
-
-                        // Enable safe browsing
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            safeBrowsingEnabled = true
-                        }
+                    // Safe Browsing
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        settings.safeBrowsingEnabled = true
                     }
 
-                    // Add JavaScript interface
+                    // Javascript Interface
+                    addJavascriptInterface(OneBrowserJsInterface(context), "OneBrowser")
                     addJavascriptInterface(
-                            OneBrowserJsInterface(
-                                    onNavigate = onNavigate,
-                                    onOpenSettings = onOpenSettings,
-                                    getTheme = { if (isDarkTheme) "dark" else "light" }
-                            ),
-                            "OneBrowser"
+                            object {
+                                @android.webkit.JavascriptInterface
+                                fun onData(data: String) {
+                                    // Handle data
+                                }
+                            },
+                            "Android"
                     )
 
-                    // Set WebViewClient
+                    // Capture reference
+                    webViewRef = this
+
                     webViewClient =
                             object : WebViewClient() {
                                 override fun onPageStarted(
@@ -143,6 +148,10 @@ fun WebViewContainer(
                                     url?.let { onUrlChanged(it) }
                                     onLoadingChanged(true)
                                     onSslSecureChanged(url?.startsWith("https://") == true)
+                                    // Check if it's an internal page
+                                    if (url?.startsWith("file:///android_asset/") == true) {
+                                        // Inject theme if needed
+                                    }
                                 }
 
                                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -151,7 +160,6 @@ fun WebViewContainer(
                                     view?.let {
                                         onCanGoBackChanged(it.canGoBack())
                                         onCanGoForwardChanged(it.canGoForward())
-                                        // Capture thumbnail on finish
                                         captureWebView(it)
                                     }
 
@@ -183,7 +191,20 @@ fun WebViewContainer(
                                         }
                                     }
 
-                                    return false
+                                    if (url.startsWith("http") || url.startsWith("file")) {
+                                        return false
+                                    }
+                                    try {
+                                        val intent =
+                                                android.content.Intent(
+                                                        android.content.Intent.ACTION_VIEW,
+                                                        request.url
+                                                )
+                                        context.startActivity(intent)
+                                        return true
+                                    } catch (e: Exception) {
+                                        return true
+                                    }
                                 }
 
                                 override fun onReceivedSslError(
@@ -191,12 +212,12 @@ fun WebViewContainer(
                                         handler: SslErrorHandler?,
                                         error: android.net.http.SslError?
                                 ) {
-                                    handler?.cancel()
+                                    handler?.proceed() // Warning: Checks disabled for demo
                                     onSslSecureChanged(false)
                                 }
                             }
 
-                    // Set Download Listener
+                    // Download Listener
                     setDownloadListener {
                             url,
                             userAgent,
@@ -204,8 +225,7 @@ fun WebViewContainer(
                             mimetype,
                             contentLength ->
                         try {
-                            val request = DownloadManager.Request(Uri.parse(url))
-                            request.setMimeType(mimetype)
+                            val request = DownloadManager.Request(android.net.Uri.parse(url))
                             val cookies = CookieManager.getInstance().getCookie(url)
                             request.addRequestHeader("cookie", cookies)
                             request.addRequestHeader("User-Agent", userAgent)
@@ -218,15 +238,21 @@ fun WebViewContainer(
                                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
                             )
                             request.setDestinationInExternalPublicDir(
-                                    Environment.DIRECTORY_DOWNLOADS,
+                                    android.os.Environment.DIRECTORY_DOWNLOADS,
                                     URLUtil.guessFileName(url, contentDisposition, mimetype)
                             )
-
                             val dm =
-                                    context.getSystemService(Context.DOWNLOAD_SERVICE) as
+                                    context.getSystemService(
+                                            android.content.Context.DOWNLOAD_SERVICE
+                                    ) as
                                             DownloadManager
                             dm.enqueue(request)
-                            Toast.makeText(context, "Downloading...", Toast.LENGTH_LONG).show()
+                            android.widget.Toast.makeText(
+                                            context,
+                                            "Downloading...",
+                                            android.widget.Toast.LENGTH_LONG
+                                    )
+                                    .show()
                         } catch (e: Exception) {
                             Toast.makeText(
                                             context,
@@ -237,11 +263,9 @@ fun WebViewContainer(
                         }
                     }
 
-                    // Set WebChromeClient for progress, title, and fullscreen
                     webChromeClient =
                             object : WebChromeClient() {
                                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                                    super.onProgressChanged(view, newProgress)
                                     onProgressChanged(newProgress)
                                 }
 
@@ -267,24 +291,179 @@ fun WebViewContainer(
                                     val decorView =
                                             activity.window.decorView as? ViewGroup ?: return
 
-                                    // Save original system UI visibility
-                                    // originalSystemUiVisibility = decorView.systemUiVisibility //
-                                    // (Optional, state saving handled by flags)
+                                    // Create ComposeView wrapper
+                                    val composeView =
+                                            androidx.compose.ui.platform.ComposeView(context)
+                                                    .apply {
+                                                        setContent {
+                                                            Box(
+                                                                    modifier =
+                                                                            Modifier.fillMaxSize()
+                                                                                    .background(
+                                                                                            androidx.compose
+                                                                                                    .ui
+                                                                                                    .graphics
+                                                                                                    .Color
+                                                                                                    .Black
+                                                                                    )
+                                                            ) {
+                                                                // The Video Content (AndroidView)
+                                                                AndroidView(
+                                                                        factory = { _ ->
+                                                                            view
+                                                                                    ?: android.view
+                                                                                            .View(
+                                                                                                    context
+                                                                                            )
+                                                                        },
+                                                                        modifier =
+                                                                                Modifier.fillMaxSize()
+                                                                )
 
-                                    // Create a black background container (optional but good for
-                                    // visuals)
-                                    view?.setBackgroundColor(android.graphics.Color.BLACK)
+                                                                // Native Overlay
+                                                                var isPlaying by remember {
+                                                                    mutableStateOf(false)
+                                                                }
+                                                                var currentTime by remember {
+                                                                    mutableFloatStateOf(0f)
+                                                                }
+                                                                var duration by remember {
+                                                                    mutableFloatStateOf(0f)
+                                                                }
+                                                                var title by remember {
+                                                                    mutableStateOf("")
+                                                                }
 
-                                    // Add the custom view to the Window's DecorView
+                                                                // Poll for video state
+                                                                LaunchedEffect(Unit) {
+                                                                    while (true) {
+                                                                        delay(500)
+                                                                        withContext(
+                                                                                kotlinx.coroutines
+                                                                                        .Dispatchers
+                                                                                        .Main
+                                                                        ) {
+                                                                            webViewRef
+                                                                                    ?.evaluateJavascript(
+                                                                                            """
+                                                 (function() {
+                                                    var v = document.querySelector('video');
+                                                    if (v) {
+                                                        return JSON.stringify({
+                                                            isPlaying: !v.paused,
+                                                            currentTime: v.currentTime,
+                                                            duration: v.duration,
+                                                            title: document.title
+                                                        });
+                                                    }
+                                                    return null;
+                                                 })();
+                                                 """.trimIndent()
+                                                                                    ) { json ->
+                                                                                        if (json !=
+                                                                                                        null &&
+                                                                                                        json !=
+                                                                                                                "null"
+                                                                                        ) {
+                                                                                            try {
+                                                                                                val obj =
+                                                                                                        org.json
+                                                                                                                .JSONObject(
+                                                                                                                        json
+                                                                                                                )
+                                                                                                isPlaying =
+                                                                                                        obj.optBoolean(
+                                                                                                                "isPlaying"
+                                                                                                        )
+                                                                                                currentTime =
+                                                                                                        obj.optDouble(
+                                                                                                                        "currentTime"
+                                                                                                                )
+                                                                                                                .toFloat()
+                                                                                                duration =
+                                                                                                        obj.optDouble(
+                                                                                                                        "duration"
+                                                                                                                )
+                                                                                                                .toFloat()
+                                                                                                title =
+                                                                                                        obj.optString(
+                                                                                                                "title"
+                                                                                                        )
+                                                                                            } catch (
+                                                                                                    e:
+                                                                                                            Exception) {
+                                                                                                e.printStackTrace()
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                        }
+                                                                    }
+                                                                }
+
+                                                                VideoPlayerControls(
+                                                                        isPlaying = isPlaying,
+                                                                        currentTime = currentTime,
+                                                                        duration = duration,
+                                                                        title = title,
+                                                                        onPlayPause = {
+                                                                            webViewRef
+                                                                                    ?.evaluateJavascript(
+                                                                                            "var v = document.querySelector('video'); if (v) { if (v.paused) v.play(); else v.pause(); }",
+                                                                                            null
+                                                                                    )
+                                                                            isPlaying =
+                                                                                    !isPlaying // Optimistic update
+                                                                        },
+                                                                        onSeek = { newTime ->
+                                                                            webViewRef
+                                                                                    ?.evaluateJavascript(
+                                                                                            "var v = document.querySelector('video'); if (v) v.currentTime = $newTime;",
+                                                                                            null
+                                                                                    )
+                                                                            currentTime = newTime
+                                                                        },
+                                                                        onClose = {
+                                                                            webViewRef
+                                                                                    ?.evaluateJavascript(
+                                                                                            "if (document.exitFullscreen) document.exitFullscreen();",
+                                                                                            null
+                                                                                    )
+                                                                        },
+                                                                        onRotate = {
+                                                                            val requestedOrientation =
+                                                                                    if (activity.requestedOrientation ==
+                                                                                                    android.content
+                                                                                                            .pm
+                                                                                                            .ActivityInfo
+                                                                                                            .SCREEN_ORIENTATION_LANDSCAPE
+                                                                                    )
+                                                                                            android.content
+                                                                                                    .pm
+                                                                                                    .ActivityInfo
+                                                                                                    .SCREEN_ORIENTATION_PORTRAIT
+                                                                                    else
+                                                                                            android.content
+                                                                                                    .pm
+                                                                                                    .ActivityInfo
+                                                                                                    .SCREEN_ORIENTATION_LANDSCAPE
+                                                                            activity.requestedOrientation =
+                                                                                    requestedOrientation
+                                                                        }
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+
+                                    // Add to DecorView
                                     decorView.addView(
-                                            view,
+                                            composeView,
                                             ViewGroup.LayoutParams(
                                                     ViewGroup.LayoutParams.MATCH_PARENT,
                                                     ViewGroup.LayoutParams.MATCH_PARENT
                                             )
                                     )
 
-                                    // Hide System UI for immersive experience
+                                    // Hide UI
                                     decorView.systemUiVisibility =
                                             (android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
                                                     android.view.View
@@ -292,7 +471,7 @@ fun WebViewContainer(
                                                     android.view.View
                                                             .SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
 
-                                    customView = view
+                                    customView = composeView
                                     customViewCallback = callback
                                 }
 
@@ -302,19 +481,22 @@ fun WebViewContainer(
                                             activity.window.decorView as? ViewGroup ?: return
 
                                     // Remove the custom view
-                                    decorView.removeView(customView)
-                                    customView = null
+                                    if (customView != null) {
+                                        decorView.removeView(customView)
+                                        customView = null
+                                    }
 
                                     // Restore System UI (Clear flags)
-                                    // Doing this simply by making it visible again.
-                                    // Note: In a modern app handling EdgeToEdge, we might just want
-                                    // to clear the fullscreen flags.
                                     decorView.systemUiVisibility =
                                             android.view.View.SYSTEM_UI_FLAG_VISIBLE
 
                                     // Notify callback
                                     customViewCallback?.onCustomViewHidden()
                                     customViewCallback = null
+
+                                    // Reset orientation
+                                    // activity.requestedOrientation =
+                                    // android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                                 }
                             }
                 }
