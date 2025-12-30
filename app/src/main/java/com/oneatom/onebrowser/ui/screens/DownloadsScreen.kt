@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.text.format.Formatter
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +36,9 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
         val context = LocalContext.current
         // Observe real-time downloads
         val downloads by DownloadTracker.downloads.collectAsState()
+
+        // Handle System Back Button
+        BackHandler(onBack = onBack)
 
         // Ensure we are tracking when this screen is open
         LaunchedEffect(Unit) { launch(Dispatchers.IO) { DownloadTracker.startTracking(context) } }
@@ -76,7 +82,6 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
                                                                                 Intent(
                                                                                         Intent.ACTION_VIEW
                                                                                 )
-                                                                        // Handle file URI opening
                                                                         val fileUri =
                                                                                 try {
                                                                                         if (item.id >
@@ -139,6 +144,18 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
                                                                                 .show()
                                                                 }
                                                         }
+                                                },
+                                                onCancel = {
+                                                        DownloadTracker.cancelDownload(
+                                                                context,
+                                                                item.id
+                                                        )
+                                                },
+                                                onDelete = {
+                                                        DownloadTracker.deleteDownload(
+                                                                context,
+                                                                item.id
+                                                        )
                                                 }
                                         )
                                         Divider(
@@ -151,9 +168,16 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
 }
 
 @Composable
-fun DownloadItemView(item: DownloadStatus, isDarkTheme: Boolean, onClick: () -> Unit) {
+fun DownloadItemView(
+        item: DownloadStatus,
+        isDarkTheme: Boolean,
+        onClick: () -> Unit,
+        onCancel: () -> Unit,
+        onDelete: () -> Unit
+) {
         val textColor = if (isDarkTheme) DarkText else LightText
         val mutedColor = if (isDarkTheme) DarkMuted else LightMuted
+        val context = LocalContext.current
 
         Row(
                 modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
@@ -163,7 +187,7 @@ fun DownloadItemView(item: DownloadStatus, isDarkTheme: Boolean, onClick: () -> 
                         imageVector = Icons.Default.InsertDriveFile,
                         contentDescription = null,
                         tint = mutedColor,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(32.dp)
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -179,20 +203,34 @@ fun DownloadItemView(item: DownloadStatus, isDarkTheme: Boolean, onClick: () -> 
                         val statusText =
                                 when (item.status) {
                                         DownloadManager.STATUS_RUNNING -> {
-                                                val speed =
-                                                        item.getSpeedString(LocalContext.current)
+                                                val speed = item.getSpeedString(context)
                                                 val eta = item.getEtaString()
-                                                "Downloading... $speed • $eta"
+                                                // Format: 5MB / 10MB (50%) • 2MB/s • 10s left
+                                                val downloaded =
+                                                        Formatter.formatFileSize(
+                                                                context,
+                                                                item.downloadedBytes
+                                                        )
+                                                val total =
+                                                        Formatter.formatFileSize(
+                                                                context,
+                                                                item.totalSize
+                                                        )
+                                                val percent = (item.progress * 100).toInt()
+                                                "$downloaded / $total ($percent%) • $speed • $eta"
                                         }
                                         DownloadManager.STATUS_PAUSED -> "Paused"
-                                        DownloadManager.STATUS_PENDING -> "Pending"
-                                        DownloadManager.STATUS_SUCCESSFUL ->
-                                                Formatter.formatFileSize(
-                                                        LocalContext.current,
-                                                        item.totalSize
-                                                )
+                                        DownloadManager.STATUS_PENDING -> "Pending..."
+                                        DownloadManager.STATUS_SUCCESSFUL -> {
+                                                val size =
+                                                        Formatter.formatFileSize(
+                                                                context,
+                                                                item.totalSize
+                                                        )
+                                                "Completed • $size"
+                                        }
                                         DownloadManager.STATUS_FAILED -> "Failed"
-                                        else -> ""
+                                        else -> "Unknown"
                                 }
                         Text(
                                 statusText,
@@ -205,8 +243,34 @@ fun DownloadItemView(item: DownloadStatus, isDarkTheme: Boolean, onClick: () -> 
                                         progress = item.progress,
                                         modifier =
                                                 Modifier.fillMaxWidth()
-                                                        .padding(top = 4.dp)
-                                                        .height(2.dp)
+                                                        .padding(top = 8.dp)
+                                                        .height(4.dp)
+                                )
+                        }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Actions
+                if (item.status == DownloadManager.STATUS_RUNNING ||
+                                item.status == DownloadManager.STATUS_PENDING ||
+                                item.status == DownloadManager.STATUS_PAUSED
+                ) {
+                        IconButton(onClick = onCancel) {
+                                Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Cancel",
+                                        tint = textColor
+                                )
+                        }
+                } else if (item.status == DownloadManager.STATUS_SUCCESSFUL ||
+                                item.status == DownloadManager.STATUS_FAILED
+                ) {
+                        IconButton(onClick = onDelete) {
+                                Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = textColor
                                 )
                         }
                 }

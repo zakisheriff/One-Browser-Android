@@ -59,6 +59,16 @@ object DownloadTracker {
         }
     }
 
+    fun cancelDownload(context: Context, id: Long) {
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadManager.remove(id)
+    }
+
+    fun deleteDownload(context: Context, id: Long) {
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadManager.remove(id) // removes file and record
+    }
+
     private fun updateDownloads(downloadManager: DownloadManager) {
         val query = DownloadManager.Query()
         // We could filter here but allow all for now

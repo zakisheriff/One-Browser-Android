@@ -257,33 +257,60 @@ fun WebViewContainer(
                         }
                     }
 
-                    setDownloadListener {
-                            url,
-                            userAgent,
-                            contentDisposition,
-                            mimetype,
-                            contentLength ->
+                    setDownloadListener { url, userAgent, contentDisposition, mimetype, _ ->
+                        // Handle blob and data URLs
+                        if (url.startsWith("blob:") || url.startsWith("data:")) {
+                            Toast.makeText(
+                                            context,
+                                            "Blob/Data downloads not fully supported.",
+                                            Toast.LENGTH_SHORT
+                                    )
+                                    .show()
+                            return@setDownloadListener
+                        }
+
+                        // Robust Filename Guessing
+                        var filename = URLUtil.guessFileName(url, contentDisposition, mimetype)
+
+                        // Fix for .bin or missing extension
+                        val extension = MimeTypeMap.getFileExtensionFromUrl(url)
+                        val mimeTypeMap = MimeTypeMap.getSingleton()
+                        val mimeExtension = mimeTypeMap.getExtensionFromMimeType(mimetype)
+
+                        // If filename ends in .bin or has no extension, try to fix it
+                        if (filename.endsWith(".bin") || !filename.contains(".")) {
+                            if (mimetype == "application/vnd.android.package-archive") {
+                                filename = filename.replace(".bin", "") + ".apk"
+                            } else if (mimeExtension != null) {
+                                filename = filename.replace(".bin", "") + "." + mimeExtension
+                            }
+                        }
+
+                        // Force APK if mime matches
+                        if (mimetype == "application/vnd.android.package-archive" &&
+                                        !filename.endsWith(".apk")
+                        ) {
+                            filename += ".apk"
+                        }
+
                         try {
-                            val request = DownloadManager.Request(android.net.Uri.parse(url))
+                            val request = DownloadManager.Request(Uri.parse(url))
+                            request.setMimeType(mimetype)
                             val cookies = CookieManager.getInstance().getCookie(url)
                             request.addRequestHeader("cookie", cookies)
                             request.addRequestHeader("User-Agent", userAgent)
                             request.setDescription("Downloading file...")
-                            request.setTitle(
-                                    URLUtil.guessFileName(url, contentDisposition, mimetype)
-                            )
+                            request.setTitle(filename)
                             request.allowScanningByMediaScanner()
                             request.setNotificationVisibility(
                                     DownloadManager.Request.VISIBILITY_HIDDEN
                             )
                             request.setDestinationInExternalPublicDir(
-                                    android.os.Environment.DIRECTORY_DOWNLOADS,
-                                    URLUtil.guessFileName(url, contentDisposition, mimetype)
+                                    Environment.DIRECTORY_DOWNLOADS,
+                                    filename
                             )
                             val dm =
-                                    context.getSystemService(
-                                            android.content.Context.DOWNLOAD_SERVICE
-                                    ) as
+                                    context.getSystemService(Context.DOWNLOAD_SERVICE) as
                                             DownloadManager
                             dm.enqueue(request)
 
@@ -675,6 +702,19 @@ fun WebViewContainer(
             }
         }
 
+        // Permission Launcher
+        val notificationPermissionLauncher =
+                androidx.activity.compose.rememberLauncherForActivityResult(
+                        contract =
+                                androidx.activity.result.contract.ActivityResultContracts
+                                        .RequestPermission(),
+                        onResult = { isGranted ->
+                            if (isGranted) {
+                                // Permission granted
+                            }
+                        }
+                )
+
         // Context Menu
         if (contextMenuUri != null) {
             androidx.compose.material3.DropdownMenu(
@@ -694,6 +734,21 @@ fun WebViewContainer(
                         },
                         onClick = {
                             val url = contextMenuUri!!
+
+                            // Check Permission for Android 13+
+                            if (Build.VERSION.SDK_INT >= 33 &&
+                                            androidx.core.content.ContextCompat.checkSelfPermission(
+                                                    context,
+                                                    android.Manifest.permission.POST_NOTIFICATIONS
+                                            ) !=
+                                                    android.content.pm.PackageManager
+                                                            .PERMISSION_GRANTED
+                            ) {
+                                notificationPermissionLauncher.launch(
+                                        android.Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            }
+
                             // Trigger Download with Advanced Tracker
                             try {
                                 val request = DownloadManager.Request(Uri.parse(url))
