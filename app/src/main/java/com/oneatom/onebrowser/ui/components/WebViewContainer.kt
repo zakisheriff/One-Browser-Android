@@ -50,6 +50,10 @@ fun WebViewContainer(
     val backgroundColor = if (isDarkTheme) DarkBackground else LightBackground
     val currentTabId = tab.id
 
+    // Fullscreen state
+    var customView by remember { mutableStateOf<android.view.View?>(null) }
+    var customViewCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
+
     // Helper to capture thumbnail
     fun captureWebView(view: WebView) {
         try {
@@ -233,7 +237,7 @@ fun WebViewContainer(
                         }
                     }
 
-                    // Set WebChromeClient for progress and title
+                    // Set WebChromeClient for progress, title, and fullscreen
                     webChromeClient =
                             object : WebChromeClient() {
                                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -249,9 +253,86 @@ fun WebViewContainer(
                                 override fun onReceivedIcon(view: WebView?, icon: Bitmap?) {
                                     super.onReceivedIcon(view, icon)
                                 }
+
+                                override fun onShowCustomView(
+                                        view: android.view.View?,
+                                        callback: CustomViewCallback?
+                                ) {
+                                    if (customView != null) {
+                                        callback?.onCustomViewHidden()
+                                        return
+                                    }
+
+                                    val activity = context as? android.app.Activity ?: return
+                                    val decorView =
+                                            activity.window.decorView as? ViewGroup ?: return
+
+                                    // Save original system UI visibility
+                                    // originalSystemUiVisibility = decorView.systemUiVisibility //
+                                    // (Optional, state saving handled by flags)
+
+                                    // Create a black background container (optional but good for
+                                    // visuals)
+                                    view?.setBackgroundColor(android.graphics.Color.BLACK)
+
+                                    // Add the custom view to the Window's DecorView
+                                    decorView.addView(
+                                            view,
+                                            ViewGroup.LayoutParams(
+                                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                            )
+                                    )
+
+                                    // Hide System UI for immersive experience
+                                    decorView.systemUiVisibility =
+                                            (android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
+                                                    android.view.View
+                                                            .SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                                                    android.view.View
+                                                            .SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+
+                                    customView = view
+                                    customViewCallback = callback
+                                }
+
+                                override fun onHideCustomView() {
+                                    val activity = context as? android.app.Activity ?: return
+                                    val decorView =
+                                            activity.window.decorView as? ViewGroup ?: return
+
+                                    // Remove the custom view
+                                    decorView.removeView(customView)
+                                    customView = null
+
+                                    // Restore System UI (Clear flags)
+                                    // Doing this simply by making it visible again.
+                                    // Note: In a modern app handling EdgeToEdge, we might just want
+                                    // to clear the fullscreen flags.
+                                    decorView.systemUiVisibility =
+                                            android.view.View.SYSTEM_UI_FLAG_VISIBLE
+
+                                    // Notify callback
+                                    customViewCallback?.onCustomViewHidden()
+                                    customViewCallback = null
+                                }
                             }
                 }
             }
+
+    // Handle Back Press when in Fullscreen
+    androidx.activity.compose.BackHandler(enabled = customView != null) {
+        val activity = context as? android.app.Activity
+        val decorView = activity?.window?.decorView as? ViewGroup
+
+        if (customView != null && decorView != null) {
+            decorView.removeView(customView)
+            customView = null
+            decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
+            customViewCallback?.onCustomViewHidden()
+            customViewCallback = null
+        }
+    }
 
     // Listen for navigation events
     LaunchedEffect(currentTabId) {
