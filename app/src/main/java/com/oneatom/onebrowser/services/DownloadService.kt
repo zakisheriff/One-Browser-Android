@@ -46,6 +46,7 @@ class DownloadService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        com.oneatom.onebrowser.data.CustomDownloadEngine.initialize(this)
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
 

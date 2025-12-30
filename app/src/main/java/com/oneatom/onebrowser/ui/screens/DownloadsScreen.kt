@@ -36,26 +36,22 @@ import kotlinx.coroutines.launch
 @Composable
 fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
         val context = LocalContext.current
-        // Observe real-time downloads
         val downloads by DownloadTracker.downloads.collectAsState()
 
-        // Handle System Back Button
         BackHandler(onBack = onBack)
 
-        // Ensure we are tracking when this screen is open
         LaunchedEffect(Unit) { launch(Dispatchers.IO) { DownloadTracker.startTracking(context) } }
 
         val backgroundColor = if (isDarkTheme) DarkBackground else LightBackground
         val textColor = if (isDarkTheme) DarkText else LightText
 
         Column(modifier = Modifier.fillMaxSize().background(backgroundColor)) {
-                // Toolbar
                 TopAppBar(
                         title = { Text("Downloads", color = textColor) },
                         navigationIcon = {
                                 IconButton(onClick = onBack) {
                                         Icon(
-                                                imageVector = Icons.Default.ArrowBack,
+                                                Icons.Default.ArrowBack,
                                                 contentDescription = "Back",
                                                 tint = textColor
                                         )
@@ -148,20 +144,93 @@ fun DownloadsScreen(isDarkTheme: Boolean, onBack: () -> Unit) {
                                                         }
                                                 },
                                                 onCancel = {
+                                                        val customItem =
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .downloads
+                                                                        .value.find {
+                                                                        it.id.hashCode().toLong() ==
+                                                                                item.id
+                                                                }
+                                                        if (customItem != null) {
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .cancelDownload(
+                                                                                customItem.id
+                                                                        )
+                                                        }
                                                         DownloadTracker.cancelDownload(
                                                                 context,
                                                                 item.id
                                                         )
                                                 },
                                                 onDelete = {
+                                                        val customItem =
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .downloads
+                                                                        .value.find {
+                                                                        it.id.hashCode().toLong() ==
+                                                                                item.id
+                                                                }
+                                                        if (customItem != null) {
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .cancelDownload(
+                                                                                customItem.id
+                                                                        )
+                                                        }
                                                         DownloadTracker.deleteDownload(
                                                                 context,
                                                                 item.id
                                                         )
+                                                },
+                                                onPause = {
+                                                        val customItem =
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .downloads
+                                                                        .value.find {
+                                                                        it.id.hashCode().toLong() ==
+                                                                                item.id
+                                                                }
+                                                        if (customItem != null) {
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .pauseDownload(
+                                                                                customItem.id
+                                                                        )
+                                                        } else {
+                                                                Toast.makeText(
+                                                                                context,
+                                                                                "Cannot pause system download",
+                                                                                Toast.LENGTH_SHORT
+                                                                        )
+                                                                        .show()
+                                                        }
+                                                },
+                                                onResume = {
+                                                        val customItem =
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .downloads
+                                                                        .value.find {
+                                                                        it.id.hashCode().toLong() ==
+                                                                                item.id
+                                                                }
+                                                        if (customItem != null) {
+                                                                com.oneatom.onebrowser.data
+                                                                        .CustomDownloadEngine
+                                                                        .resumeDownload(
+                                                                                customItem.id
+                                                                        )
+                                                        } else {
+                                                                DownloadTracker.restartDownload(
+                                                                        context,
+                                                                        item
+                                                                )
+                                                        }
                                                 }
-                                        )
-                                        Divider(
-                                                color = if (isDarkTheme) DarkBorder else LightBorder
                                         )
                                 }
                         }
@@ -174,8 +243,10 @@ fun DownloadItemView(
         item: DownloadStatus,
         isDarkTheme: Boolean,
         onClick: () -> Unit,
-        onCancel: () -> Unit, // Explicit Cancellation (Delete)
-        onDelete: () -> Unit
+        onCancel: () -> Unit,
+        onDelete: () -> Unit,
+        onPause: () -> Unit,
+        onResume: () -> Unit
 ) {
         val textColor = if (isDarkTheme) DarkText else LightText
         val mutedColor = if (isDarkTheme) DarkMuted else LightMuted
@@ -250,15 +321,14 @@ fun DownloadItemView(
                                 )
                         }
 
-                        // Action Buttons Row (Below the file info)
+                        // Action Buttons Row
                         Row(modifier = Modifier.padding(top = 12.dp)) {
                                 if (item.status == DownloadManager.STATUS_RUNNING ||
                                                 item.status == DownloadManager.STATUS_PENDING
                                 ) {
-                                        // Pause Button (Stops/Cancels for now, but user requested
-                                        // 'Pause')
+                                        // Pause Button
                                         Button(
-                                                onClick = onCancel,
+                                                onClick = onPause,
                                                 colors =
                                                         ButtonDefaults.buttonColors(
                                                                 containerColor =
@@ -287,7 +357,7 @@ fun DownloadItemView(
                                                 )
                                         }
 
-                                        // Cancel Button (Explicit Delete)
+                                        // Cancel Button
                                         Button(
                                                 onClick = onCancel,
                                                 colors =
@@ -321,12 +391,7 @@ fun DownloadItemView(
                                 ) {
                                         // Resume Button
                                         Button(
-                                                onClick = {
-                                                        DownloadTracker.restartDownload(
-                                                                context,
-                                                                item
-                                                        )
-                                                },
+                                                onClick = onResume,
                                                 colors =
                                                         ButtonDefaults.buttonColors(
                                                                 containerColor =
@@ -388,10 +453,6 @@ fun DownloadItemView(
                         }
                 }
 
-                // Keep the right side clear or maybe put the Delete for completed there?
-                // Actually user said 'below the file', implying the info.
-                // For 'Completed', maybe just a simple delete icon on right is fine, or below?
-                // User focus was on Running/Paused controls.
                 if (item.status == DownloadManager.STATUS_SUCCESSFUL) {
                         IconButton(onClick = onDelete) {
                                 Icon(

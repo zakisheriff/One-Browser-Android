@@ -315,25 +315,21 @@ fun WebViewContainer(
                         }
 
                         try {
-                            val request = DownloadManager.Request(Uri.parse(url))
-                            request.setMimeType(mimetype)
-                            val cookies = CookieManager.getInstance().getCookie(url)
-                            request.addRequestHeader("cookie", cookies)
-                            request.addRequestHeader("User-Agent", userAgent)
-                            request.setDescription("Downloading file...")
-                            request.setTitle(filename)
-                            request.allowScanningByMediaScanner()
-                            request.setNotificationVisibility(
-                                    DownloadManager.Request.VISIBILITY_HIDDEN
-                            )
-                            request.setDestinationInExternalPublicDir(
-                                    Environment.DIRECTORY_DOWNLOADS,
+                            // Use Custom Engine for true Pause/Resume support
+                            com.oneatom.onebrowser.data.CustomDownloadEngine.startDownload(
+                                    context,
+                                    url,
                                     filename
                             )
-                            val dm =
-                                    context.getSystemService(Context.DOWNLOAD_SERVICE) as
-                                            DownloadManager
-                            dm.enqueue(request)
+
+                            /*
+                            // Deprecated System Download Manager logic (kept for reference or fallback if needed)
+                             val request = DownloadManager.Request(Uri.parse(url))
+                             request.setMimeType(mimetype)
+                             // ...
+                             val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                             dm.enqueue(request)
+                            */
 
                             // Start Custom Service
                             com.oneatom.onebrowser.services.DownloadService.start(context)

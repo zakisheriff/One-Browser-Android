@@ -86,6 +86,7 @@ object DownloadTracker {
         val newDownloads = mutableListOf<DownloadStatus>()
         val currentTime = System.currentTimeMillis()
 
+        // 1. Add System Downloads
         cursor?.use {
             while (it.moveToNext()) {
                 val id = it.getLong(it.getColumnIndexOrThrow(DownloadManager.COLUMN_ID))
@@ -101,54 +102,32 @@ object DownloadTracker {
                                         DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR
                                 )
                         )
-                // COLUMN_URI is source URL, COLUMN_LOCAL_URI is file path
-                val uri = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_URI))
                 val mediaType =
                         it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE))
+                val uri = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_URI))
 
-                var speed = 0L
-                var eta = -1L
+                // Calculate speed/eta
+                var speed: Long = 0
+                var eta: Long = -1
 
                 if (status == DownloadManager.STATUS_RUNNING) {
-                    val prevBytes = previousBytesMap[id]
-                    val prevTime = previousTimeMap[id]
-                    val lastKnownSpeed = previousSpeedMap[id] ?: 0L
-
-                    if (prevBytes != null && prevTime != null) {
-                        val timeDiff = currentTime - prevTime
+                    val prevBytes = previousBytesMap[id] ?: 0
+                    val prevTime = previousTimeMap[id] ?: currentTime
+                    val timeDiff = currentTime - prevTime
+                    if (timeDiff > 0) {
                         val bytesDiff = downloadedBytes - prevBytes
-                        if (timeDiff > 0) {
-                            // Calculate instantaneous speed
-                            val instantSpeed = (bytesDiff * 1000) / timeDiff
-
-                            // Exponential Moving Average (smoothing)
-                            // alpha = 0.3 means new value has 30% weight, old has 70%
-                            speed =
-                                    if (lastKnownSpeed > 0) {
-                                        (lastKnownSpeed * 0.7 + instantSpeed * 0.3).toLong()
-                                    } else {
-                                        instantSpeed
-                                    }
-
-                            if (speed > 0) {
-                                val remainingBytes = totalSize - downloadedBytes
-                                eta = remainingBytes / speed
-                            } else {
-                                // If speed drops to 0 temporarily (e.g. buffer), keep last known
-                                // valid speed
-                                // or just show calculating if it stays 0 for too long.
-                                // simpler: keep last known speed for a bit?
-                                speed = lastKnownSpeed
-                                if (speed > 0) {
-                                    val remainingBytes = totalSize - downloadedBytes
-                                    eta = remainingBytes / speed
-                                }
-                            }
-                        }
+                        val instantSpeed = (bytesDiff * 1000) / timeDiff
+                        // Simple smoothing
+                        val lastSpeed = previousSpeedMap[id] ?: instantSpeed
+                        speed = (lastSpeed + instantSpeed) / 2
                     } else {
-                        // First tick, can't calculate speed yet
-                        speed = lastKnownSpeed
+                        speed = previousSpeedMap[id] ?: 0
                     }
+
+                    if (speed > 0 && totalSize > 0) {
+                        eta = (totalSize - downloadedBytes) / speed
+                    }
+
                     previousBytesMap[id] = downloadedBytes
                     previousTimeMap[id] = currentTime
                     previousSpeedMap[id] = speed
@@ -173,6 +152,25 @@ object DownloadTracker {
                 )
             }
         }
+
+        // 2. Add Custom Downloads
+        val customItems = CustomDownloadEngine.downloads.value
+        for (item in customItems) {
+            newDownloads.add(
+                    DownloadStatus(
+                            item.id.hashCode().toLong(),
+                            item.filename,
+                            item.totalSize,
+                            item.downloadedBytes,
+                            item.status,
+                            item.speed,
+                            item.eta,
+                            null,
+                            item.url
+                    )
+            )
+        }
+
         _downloads.value = newDownloads.sortedByDescending { it.id }
     }
 
@@ -190,7 +188,10 @@ object DownloadTracker {
                 }
                 request.setTitle(download.title)
                 request.setDescription("Downloading file...")
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+                // Ensure system notification manages persistence
+                request.setNotificationVisibility(
+                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                )
 
                 // Re-guess filename or use existing title if valid filename
                 val filename =
