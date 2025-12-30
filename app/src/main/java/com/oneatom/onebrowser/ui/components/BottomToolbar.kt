@@ -45,10 +45,12 @@ fun BottomToolbar(
         url: String,
         isLoading: Boolean,
         canGoBack: Boolean,
+        canGoForward: Boolean,
         tabCount: Int,
         isDarkTheme: Boolean,
         onSearchFocusChange: (Boolean) -> Unit,
         onGoBack: () -> Unit,
+        onGoForward: () -> Unit,
         onReload: () -> Unit,
         onStop: () -> Unit,
         onOpenTabs: () -> Unit,
@@ -97,6 +99,17 @@ fun BottomToolbar(
                         isDarkTheme = isDarkTheme,
                         onClick = onGoBack
                 )
+
+                // Forward button - circular
+                if (canGoForward) {
+                        CircleIconButton(
+                                icon = Icons.Default.ArrowForward,
+                                contentDescription = "Forward",
+                                enabled = true,
+                                isDarkTheme = isDarkTheme,
+                                onClick = onGoForward
+                        )
+                }
 
                 // Tabs button - square with count
                 Box(
