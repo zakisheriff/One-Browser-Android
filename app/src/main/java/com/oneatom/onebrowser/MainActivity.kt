@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -94,7 +95,7 @@ class MainActivity : ComponentActivity() {
                         onUpdateTab = viewModel::updateTab,
                         onCaptureThumbnail = viewModel::updateThumbnail,
                         navigationActions = navigationActions,
-                        modifier = Modifier.fillMaxSize().systemBarsPadding()
+                        modifier = Modifier.fillMaxSize().systemBarsPadding().imePadding()
                 )
             }
         }

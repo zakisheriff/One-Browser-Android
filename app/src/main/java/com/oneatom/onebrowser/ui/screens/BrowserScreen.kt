@@ -6,6 +6,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.oneatom.onebrowser.data.Tab
@@ -13,7 +14,10 @@ import com.oneatom.onebrowser.data.ToolbarPosition
 import com.oneatom.onebrowser.ui.components.*
 import com.oneatom.onebrowser.ui.theme.*
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(
+        androidx.compose.foundation.ExperimentalFoundationApi::class,
+        androidx.compose.foundation.layout.ExperimentalLayoutApi::class
+)
 @Composable
 fun BrowserScreen(
         tabs: List<Tab>,
@@ -72,127 +76,97 @@ fun BrowserScreen(
 
         Box(modifier = modifier.fillMaxSize().background(backgroundColor)) {
                 // Main content
-                Column(modifier = Modifier.fillMaxSize()) {
-                        // WebView content - takes most of the space
-                        // WebView content - takes most of the space
-                        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                val activeIndex =
-                                        tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
-                                val pagerState =
-                                        androidx.compose.foundation.pager.rememberPagerState(
-                                                initialPage = activeIndex,
-                                                pageCount = { tabs.size }
-                                        )
+                // Main content
+                Box(modifier = Modifier.fillMaxSize()) {
+                        // WebView content - fills the screen
+                        val activeIndex =
+                                tabs.indexOfFirst { it.id == activeTabId }.coerceAtLeast(0)
+                        val pagerState =
+                                androidx.compose.foundation.pager.rememberPagerState(
+                                        initialPage = activeIndex,
+                                        pageCount = { tabs.size }
+                                )
 
-                                // Sync activeTabId -> Pager
-                                LaunchedEffect(activeTabId) {
-                                        if (activeTabId != null && tabs.isNotEmpty()) {
-                                                val index =
-                                                        tabs.indexOfFirst { it.id == activeTabId }
-                                                if (index >= 0 && index != pagerState.currentPage) {
-                                                        pagerState.scrollToPage(index)
-                                                }
-                                        }
-                                }
-
-                                // Sync Pager -> activeTabId (if we allowed swiping, but we disabled
-                                // it for now to
-                                // avoid conflict)
-                                // However, navigation actions from Navbar will update activeTabId,
-                                // which updates
-                                // Pager.
-
-                                androidx.compose.foundation.pager.HorizontalPager(
-                                        state = pagerState,
-                                        userScrollEnabled =
-                                                false, // Disable content swipe to avoid conflict
-                                        // with web content
-                                        modifier = Modifier.fillMaxSize()
-                                ) { page ->
-                                        val tab = tabs.getOrNull(page)
-                                        if (tab != null) {
-                                                key(tab.id) {
-                                                        WebViewContainer(
-                                                                tab = tab,
-                                                                isDarkTheme = isDarkTheme,
-                                                                onTitleChanged = { title ->
-                                                                        onUpdateTab(tab.id) {
-                                                                                copy(title = title)
-                                                                        }
-                                                                },
-                                                                onUrlChanged = { url ->
-                                                                        onUpdateTab(tab.id) {
-                                                                                copy(url = url)
-                                                                        }
-                                                                },
-                                                                onProgressChanged = { progress ->
-                                                                        onUpdateTab(tab.id) {
-                                                                                copy(
-                                                                                        progress =
-                                                                                                progress
-                                                                                )
-                                                                        }
-                                                                },
-                                                                onLoadingChanged = { loading ->
-                                                                        onUpdateTab(tab.id) {
-                                                                                copy(
-                                                                                        isLoading =
-                                                                                                loading
-                                                                                )
-                                                                        }
-                                                                },
-                                                                onCanGoBackChanged = { canGoBack ->
-                                                                        onUpdateTab(tab.id) {
-                                                                                copy(
-                                                                                        canGoBack =
-                                                                                                canGoBack
-                                                                                )
-                                                                        }
-                                                                },
-                                                                onCanGoForwardChanged = {
-                                                                        canGoForward ->
-                                                                        onUpdateTab(tab.id) {
-                                                                                copy(
-                                                                                        canGoForward =
-                                                                                                canGoForward
-                                                                                )
-                                                                        }
-                                                                },
-                                                                onSslSecureChanged = { secure ->
-                                                                        onUpdateTab(tab.id) {
-                                                                                copy(
-                                                                                        sslSecure =
-                                                                                                secure
-                                                                                )
-                                                                        }
-                                                                },
-                                                                onNavigate = onNavigate,
-                                                                onOpenSettings = onOpenSettings,
-                                                                navigationActions =
-                                                                        if (tab.id == activeTabId)
-                                                                                navigationActions
-                                                                        else null, // Only pass
-                                                                // actions to
-                                                                // active tab
-                                                                onCaptureThumbnail = { bitmap ->
-                                                                        onCaptureThumbnail(
-                                                                                tab.id,
-                                                                                bitmap
-                                                                        )
-                                                                },
-                                                                modifier =
-                                                                        Modifier.padding(
-                                                                                horizontal = 4.dp
-                                                                        )
-                                                        )
-                                                }
+                        // Sync activeTabId -> Pager
+                        LaunchedEffect(activeTabId) {
+                                if (activeTabId != null && tabs.isNotEmpty()) {
+                                        val index = tabs.indexOfFirst { it.id == activeTabId }
+                                        if (index >= 0 && index != pagerState.currentPage) {
+                                                pagerState.scrollToPage(index)
                                         }
                                 }
                         }
 
-                        // Bottom toolbar - minimal design
+                        androidx.compose.foundation.pager.HorizontalPager(
+                                state = pagerState,
+                                userScrollEnabled = false,
+                                modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                                val tab = tabs.getOrNull(page)
+                                if (tab != null) {
+                                        key(tab.id) {
+                                                WebViewContainer(
+                                                        tab = tab,
+                                                        isDarkTheme = isDarkTheme,
+                                                        onTitleChanged = { title ->
+                                                                onUpdateTab(tab.id) {
+                                                                        copy(title = title)
+                                                                }
+                                                        },
+                                                        onUrlChanged = { url ->
+                                                                onUpdateTab(tab.id) {
+                                                                        copy(url = url)
+                                                                }
+                                                        },
+                                                        onProgressChanged = { progress ->
+                                                                onUpdateTab(tab.id) {
+                                                                        copy(progress = progress)
+                                                                }
+                                                        },
+                                                        onLoadingChanged = { loading ->
+                                                                onUpdateTab(tab.id) {
+                                                                        copy(isLoading = loading)
+                                                                }
+                                                        },
+                                                        onCanGoBackChanged = { canGoBack ->
+                                                                onUpdateTab(tab.id) {
+                                                                        copy(canGoBack = canGoBack)
+                                                                }
+                                                        },
+                                                        onCanGoForwardChanged = { canGoForward ->
+                                                                onUpdateTab(tab.id) {
+                                                                        copy(
+                                                                                canGoForward =
+                                                                                        canGoForward
+                                                                        )
+                                                                }
+                                                        },
+                                                        onSslSecureChanged = { secure ->
+                                                                onUpdateTab(tab.id) {
+                                                                        copy(sslSecure = secure)
+                                                                }
+                                                        },
+                                                        onNavigate = onNavigate,
+                                                        onOpenSettings = onOpenSettings,
+                                                        navigationActions =
+                                                                if (tab.id == activeTabId)
+                                                                        navigationActions
+                                                                else null,
+                                                        onCaptureThumbnail = { bitmap ->
+                                                                onCaptureThumbnail(tab.id, bitmap)
+                                                        },
+                                                        modifier =
+                                                                Modifier.fillMaxSize()
+                                                                        .padding(bottom = 68.dp)
+                                                )
+                                        }
+                                }
+                        }
+
+                        // Bottom toolbar - overlaid at bottom
                         AnimatedVisibility(
                                 visible = !isSearchFocused && !isTabSwitcherOpen,
+                                modifier = Modifier.align(Alignment.BottomCenter),
                                 enter =
                                         slideInVertically(
                                                 initialOffsetY = { it },

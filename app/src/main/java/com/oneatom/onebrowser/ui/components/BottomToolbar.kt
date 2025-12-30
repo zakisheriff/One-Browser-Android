@@ -81,6 +81,33 @@ fun BottomToolbar(
         Row(
                 modifier =
                         modifier.fillMaxWidth()
+                                .background(
+                                        brush =
+                                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                                        colors =
+                                                                listOf(
+                                                                        Color.Transparent,
+                                                                        if (isDarkTheme)
+                                                                                Color.Black.copy(
+                                                                                        alpha = 0.5f
+                                                                                )
+                                                                        else
+                                                                                Color.White.copy(
+                                                                                        alpha = 0.5f
+                                                                                ),
+                                                                        if (isDarkTheme)
+                                                                                Color.Black.copy(
+                                                                                        alpha =
+                                                                                                0.95f
+                                                                                )
+                                                                        else
+                                                                                Color.White.copy(
+                                                                                        alpha =
+                                                                                                0.95f
+                                                                                )
+                                                                )
+                                                )
+                                )
                                 .pointerInput(Unit) {
                                         var totalDragX = 0f
                                         var totalDragY = 0f
@@ -97,7 +124,8 @@ fun BottomToolbar(
                                                                 // Horizontal
                                                                 if (kotlin.math.abs(totalDragX) >
                                                                                 100
-                                                                ) { // Higher threshold for atomic
+                                                                ) { // Higher threshold for
+                                                                        // atomic
                                                                         // swipe
                                                                         if (totalDragX > 0) {
                                                                                 onSwipePrevious()
@@ -108,7 +136,8 @@ fun BottomToolbar(
                                                         } else {
                                                                 // Vertical
                                                                 if (totalDragY < -50
-                                                                ) { // Threshold for swipe up
+                                                                ) { // Threshold for swipe
+                                                                        // up
                                                                         onOpenTabs()
                                                                 }
                                                         }
@@ -155,44 +184,68 @@ fun BottomToolbar(
                         )
                 }
 
-                // Tabs button - square with count
+                // Tabs button - transparent
                 Box(
                         modifier =
                                 Modifier.size(44.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(backgroundColor)
-                                        .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+                                        .background(
+                                                if (isDarkTheme) Color.White.copy(alpha = 0.15f)
+                                                else Color.Black.copy(alpha = 0.1f)
+                                        ) // Visible glass backing
                                         .clickable { onOpenTabs() },
                         contentAlignment = Alignment.Center
                 ) {
                         Text(
                                 text = tabCount.toString(),
                                 color = textColor,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                style =
+                                        androidx.compose.ui.text.TextStyle(
+                                                shadow =
+                                                        androidx.compose.ui.graphics.Shadow(
+                                                                color =
+                                                                        if (isDarkTheme) Color.Black
+                                                                        else Color.White,
+                                                                blurRadius = 4f
+                                                        )
+                                        )
                         )
                 }
 
-                // URL bar - pill shape, takes remaining space
+                // URL bar - transparent, text only
                 Row(
                         modifier =
                                 Modifier.weight(1f)
                                         .height(44.dp)
                                         .clip(RoundedCornerShape(22.dp))
-                                        .background(backgroundColor)
-                                        .border(1.dp, borderColor, RoundedCornerShape(22.dp))
+                                        .background(
+                                                if (isDarkTheme) Color.White.copy(alpha = 0.15f)
+                                                else Color.Black.copy(alpha = 0.1f)
+                                        ) // Visible glass backing
                                         .clickable { onSearchFocusChange(true) }
-                                        .padding(horizontal = 16.dp),
+                                        .padding(horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                 ) {
                         Text(
                                 text = displayUrl,
                                 color = if (url.isEmpty()) mutedColor else textColor,
-                                fontSize = 14.sp,
+                                fontSize = 15.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                style =
+                                        androidx.compose.ui.text.TextStyle(
+                                                shadow =
+                                                        androidx.compose.ui.graphics.Shadow(
+                                                                color =
+                                                                        if (isDarkTheme) Color.Black
+                                                                        else Color.White,
+                                                                blurRadius = 4f
+                                                        )
+                                        )
                         )
                 }
 
@@ -234,8 +287,6 @@ private fun CircleIconButton(
         isDarkTheme: Boolean,
         onClick: () -> Unit
 ) {
-        val backgroundColor = if (isDarkTheme) DarkInputBackground else LightInputBackground
-        val borderColor = if (isDarkTheme) DarkBorder else LightBorder
         val iconColor = if (isDarkTheme) DarkText else LightText
         val disabledColor = if (isDarkTheme) DarkMuted else LightMuted
 
@@ -243,18 +294,18 @@ private fun CircleIconButton(
                 modifier =
                         Modifier.size(44.dp)
                                 .clip(CircleShape)
-                                .background(backgroundColor)
-                                .border(1.dp, borderColor, CircleShape)
+                                .background(
+                                        if (isDarkTheme) Color.Black.copy(alpha = 0.2f)
+                                        else Color.White.copy(alpha = 0.2f)
+                                ) // Subtle glass
                                 .clickable(enabled = enabled, onClick = onClick),
                 contentAlignment = Alignment.Center
         ) {
                 Icon(
                         imageVector = icon,
                         contentDescription = contentDescription,
-                        tint =
-                                if (enabled) iconColor.copy(alpha = 0.8f)
-                                else disabledColor.copy(alpha = 0.4f),
-                        modifier = Modifier.size(20.dp)
+                        tint = if (enabled) iconColor else disabledColor.copy(alpha = 0.4f),
+                        modifier = Modifier.size(24.dp) // Slightly larger icon for visibility
                 )
         }
 }
