@@ -344,6 +344,16 @@ fun WebViewContainer(
                                     customViewCallback?.onCustomViewHidden()
                                     customViewCallback = null
                                 }
+
+                                override fun onConsoleMessage(
+                                        consoleMessage: ConsoleMessage?
+                                ): Boolean {
+                                    android.util.Log.d(
+                                            "OneBrowserJS",
+                                            consoleMessage?.message() ?: ""
+                                    )
+                                    return true
+                                }
                             }
                 }
             }
@@ -352,6 +362,11 @@ fun WebViewContainer(
     LaunchedEffect(Unit) {
         while (true) {
             withContext(kotlinx.coroutines.Dispatchers.Main) {
+                // Fallback for YouTube
+                if (webView.url?.contains("youtube.com/watch") == true) {
+                    isVideoPresent = true
+                }
+
                 webViewRef?.evaluateJavascript(
                         """
                         (function() {
@@ -360,6 +375,7 @@ fun WebViewContainer(
                             v = document.getElementsByTagName('video')[0];
                         }
                         if (v) {
+                            console.log("Video found: " + v.src);
                             return JSON.stringify({
                                 isPresent: true,
                                 isPlaying: !v.paused,
@@ -376,9 +392,10 @@ fun WebViewContainer(
                         try {
                             val obj = org.json.JSONObject(json)
                             val present = obj.optBoolean("isPresent")
-                            isVideoPresent = present
 
+                            // Only update if true or if purely relying on JS
                             if (present) {
+                                isVideoPresent = true
                                 val newIsPlaying = obj.optBoolean("isPlaying")
                                 isPlaying = newIsPlaying
 
@@ -389,6 +406,11 @@ fun WebViewContainer(
                                 currentTime = newTime
 
                                 title = obj.optString("title")
+                            } else {
+                                // Only reset if NOT on a forced site
+                                if (webView.url?.contains("youtube.com/watch") != true) {
+                                    isVideoPresent = false
+                                }
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -512,34 +534,97 @@ fun WebViewContainer(
         // Native Player Overlay
         if (showNativePlayer) {
             val context = LocalContext.current
+
+            // Manage System UI and Video Element CSS
             DisposableEffect(Unit) {
                 val activity = context as? android.app.Activity
                 val window = activity?.window
+
+                // 1. Hide System UI
                 window?.decorView?.systemUiVisibility =
                         (android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
                                 android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
                                 android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+
+                // 2. Inject CSS to force video to fill screen
+                webView.evaluateJavascript(
+                        """
+                    (function() {
+                        var v = document.querySelector('video');
+                        if (!v && document.getElementsByTagName('video').length > 0) {
+                            v = document.getElementsByTagName('video')[0];
+                        }
+                        if (v) {
+                            v.dataset.originalStyle = v.getAttribute('style') || '';
+                            v.style.position = 'fixed';
+                            v.style.top = '0';
+                            v.style.left = '0';
+                            v.style.width = '100vw';
+                            v.style.height = '100vh';
+                            v.style.zIndex = '2147483647';
+                            v.style.backgroundColor = 'black';
+                            v.style.objectFit = 'contain';
+                            document.body.style.overflow = 'hidden';
+                        }
+                    })();
+                """.trimIndent(),
+                        null
+                )
+
                 onDispose {
+                    // Restore System UI
                     window?.decorView?.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_VISIBLE
+
+                    // Restore Video Element Style
+                    webView.evaluateJavascript(
+                            """
+                        (function() {
+                            var v = document.querySelector('video');
+                            if (!v && document.getElementsByTagName('video').length > 0) {
+                                v = document.getElementsByTagName('video')[0];
+                            }
+                            if (v) {
+                                v.setAttribute('style', v.dataset.originalStyle || '');
+                                document.body.style.overflow = '';
+                            }
+                        })();
+                     """.trimIndent(),
+                            null
+                    )
                 }
             }
 
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black).zIndex(10f)) {
+            Box(
+                    modifier =
+                            Modifier.fillMaxSize()
+                                    .background(
+                                            Color.Transparent
+                                    ) // Transparent to see WebView content behind
+                                    .zIndex(20f)
+            ) {
                 VideoPlayerControls(
                         isPlaying = isPlaying,
                         currentTime = currentTime,
                         duration = duration,
                         title = title,
                         onPlayPause = {
-                            webView.evaluateJavascript(
-                                    "var v = document.querySelector('video'); if (v) { if (v.paused) v.play(); else v.pause(); }",
-                                    null
-                            )
-                            isPlaying = !isPlaying
+                            // Explicit toggle based on CURRENT UI STATE to prevent desync
+                            if (isPlaying) {
+                                webView.evaluateJavascript(
+                                        "var v = document.querySelector('video'); if (!v && document.getElementsByTagName('video').length > 0) v = document.getElementsByTagName('video')[0]; if (v) v.pause();",
+                                        null
+                                )
+                            } else {
+                                webView.evaluateJavascript(
+                                        "var v = document.querySelector('video'); if (!v && document.getElementsByTagName('video').length > 0) v = document.getElementsByTagName('video')[0]; if (v) v.play();",
+                                        null
+                                )
+                            }
+                            isPlaying = !isPlaying // Optimistic update
                         },
                         onSeek = { newTime ->
                             webView.evaluateJavascript(
-                                    "var v = document.querySelector('video'); if (v) v.currentTime = $newTime;",
+                                    "var v = document.querySelector('video'); if (!v && document.getElementsByTagName('video').length > 0) v = document.getElementsByTagName('video')[0]; if (v) v.currentTime = $newTime;",
                                     null
                             )
                             currentTime = newTime
