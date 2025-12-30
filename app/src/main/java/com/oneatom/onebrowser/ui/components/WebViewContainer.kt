@@ -356,6 +356,9 @@ fun WebViewContainer(
                         """
                         (function() {
                         var v = document.querySelector('video');
+                        if (!v && document.getElementsByTagName('video').length > 0) {
+                            v = document.getElementsByTagName('video')[0];
+                        }
                         if (v) {
                             return JSON.stringify({
                                 isPresent: true,
@@ -493,7 +496,9 @@ fun WebViewContainer(
         if (isVideoPresent && !showNativePlayer && customView == null) {
             Box(
                     modifier =
-                            Modifier.align(Alignment.BottomEnd).padding(bottom = 80.dp, end = 16.dp)
+                            Modifier.align(Alignment.BottomEnd)
+                                    .padding(bottom = 24.dp, end = 16.dp)
+                                    .zIndex(10f) // Ensure it is drawn on top of WebView
             ) {
                 FloatingActionButton(
                         onClick = { showNativePlayer = true },
