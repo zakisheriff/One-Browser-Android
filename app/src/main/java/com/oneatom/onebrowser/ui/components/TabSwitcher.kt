@@ -151,16 +151,13 @@ fun TabSwitcher(
                                                         }
                                                 },
                                                 dismissContent = {
-                                                        Box(
+                                                        Card(
                                                                 modifier =
                                                                         Modifier.aspectRatio(0.7f)
                                                                                 .clip(
                                                                                         RoundedCornerShape(
                                                                                                 16.dp
                                                                                         )
-                                                                                )
-                                                                                .background(
-                                                                                        cardBgColor
                                                                                 )
                                                                                 .border(
                                                                                         width =
@@ -172,7 +169,7 @@ fun TabSwitcher(
                                                                                         color =
                                                                                                 if (isActive
                                                                                                 )
-                                                                                                        textColor
+                                                                                                        Color.Blue
                                                                                                 else
                                                                                                         borderColor,
                                                                                         shape =
@@ -184,86 +181,98 @@ fun TabSwitcher(
                                                                                         onTabClick(
                                                                                                 tab.id
                                                                                         )
-                                                                                }
+                                                                                },
+                                                                colors =
+                                                                        CardDefaults.cardColors(
+                                                                                containerColor =
+                                                                                        cardBgColor
+                                                                        ),
+                                                                shape = RoundedCornerShape(16.dp)
                                                         ) {
                                                                 Column(
                                                                         modifier =
                                                                                 Modifier.fillMaxSize()
                                                                 ) {
-                                                                        // Tab preview area
-                                                                        Box(
-                                                                                modifier =
-                                                                                        Modifier.weight(
-                                                                                                        1f
-                                                                                                )
-                                                                                                .fillMaxWidth()
-                                                                                                .background(
-                                                                                                        if (isDarkTheme
-                                                                                                        )
-                                                                                                                DarkHover
-                                                                                                        else
-                                                                                                                LightHover
-                                                                                                ),
-                                                                                contentAlignment =
-                                                                                        Alignment
-                                                                                                .Center
-                                                                        ) {
-                                                                                // Placeholder for
-                                                                                // tab preview
-                                                                                Text(
-                                                                                        text =
-                                                                                                tab.title
-                                                                                                        .take(
-                                                                                                                1
-                                                                                                        )
-                                                                                                        .uppercase()
-                                                                                                        .ifEmpty {
-                                                                                                                "N"
-                                                                                                        },
-                                                                                        color =
-                                                                                                mutedColor,
-                                                                                        fontSize =
-                                                                                                32.sp
-                                                                                )
-                                                                        }
-
-                                                                        // Tab info
+                                                                        // Header: Logo | Title |
+                                                                        // Close
                                                                         Row(
                                                                                 modifier =
                                                                                         Modifier.fillMaxWidth()
+                                                                                                .height(
+                                                                                                        40.dp
+                                                                                                )
                                                                                                 .padding(
-                                                                                                        12.dp
+                                                                                                        horizontal =
+                                                                                                                8.dp
                                                                                                 ),
-                                                                                horizontalArrangement =
-                                                                                        Arrangement
-                                                                                                .SpaceBetween,
                                                                                 verticalAlignment =
                                                                                         Alignment
-                                                                                                .CenterVertically
+                                                                                                .CenterVertically,
+                                                                                horizontalArrangement =
+                                                                                        Arrangement
+                                                                                                .SpaceBetween
                                                                         ) {
-                                                                                Text(
-                                                                                        text =
-                                                                                                tab.title
-                                                                                                        .ifEmpty {
-                                                                                                                "New Tab"
-                                                                                                        },
-                                                                                        color =
-                                                                                                textColor,
-                                                                                        fontSize =
-                                                                                                12.sp,
-                                                                                        maxLines =
-                                                                                                1,
-                                                                                        overflow =
-                                                                                                TextOverflow
-                                                                                                        .Ellipsis,
+                                                                                Row(
                                                                                         modifier =
                                                                                                 Modifier.weight(
                                                                                                         1f
+                                                                                                ),
+                                                                                        verticalAlignment =
+                                                                                                Alignment
+                                                                                                        .CenterVertically
+                                                                                ) {
+                                                                                        Box(
+                                                                                                modifier =
+                                                                                                        Modifier.size(
+                                                                                                                        16.dp
+                                                                                                                )
+                                                                                                                .background(
+                                                                                                                        Color.Gray,
+                                                                                                                        CircleShape
+                                                                                                                ),
+                                                                                                contentAlignment =
+                                                                                                        Alignment
+                                                                                                                .Center
+                                                                                        ) {
+                                                                                                Text(
+                                                                                                        text =
+                                                                                                                tab.title
+                                                                                                                        .take(
+                                                                                                                                1
+                                                                                                                        )
+                                                                                                                        .uppercase(),
+                                                                                                        fontSize =
+                                                                                                                10.sp,
+                                                                                                        color =
+                                                                                                                Color.White
                                                                                                 )
-                                                                                )
+                                                                                        }
 
-                                                                                // Close tab button
-                                                                                // (Icon only)
+                                                                                        Spacer(
+                                                                                                modifier =
+                                                                                                        Modifier.width(
+                                                                                                                8.dp
+                                                                                                        )
+                                                                                        )
+
+                                                                                        Text(
+                                                                                                text =
+                                                                                                        tab.title
+                                                                                                                .ifEmpty {
+                                                                                                                        "New Tab"
+                                                                                                                },
+                                                                                                fontSize =
+                                                                                                        12.sp,
+                                                                                                color =
+                                                                                                        textColor,
+                                                                                                maxLines =
+                                                                                                        1,
+                                                                                                overflow =
+                                                                                                        TextOverflow
+                                                                                                                .Ellipsis
+                                                                                        )
+                                                                                }
+
                                                                                 IconButton(
                                                                                         onClick = {
                                                                                                 onTabClose(
@@ -280,14 +289,103 @@ fun TabSwitcher(
                                                                                                         Icons.Default
                                                                                                                 .Close,
                                                                                                 contentDescription =
-                                                                                                        "Close tab",
+                                                                                                        "Close",
                                                                                                 tint =
-                                                                                                        mutedColor,
+                                                                                                        textColor,
                                                                                                 modifier =
                                                                                                         Modifier.size(
                                                                                                                 16.dp
                                                                                                         )
                                                                                         )
+                                                                                }
+                                                                        }
+
+                                                                        // Thumbnail Body
+                                                                        Box(
+                                                                                modifier =
+                                                                                        Modifier.weight(
+                                                                                                        1f
+                                                                                                )
+                                                                                                .fillMaxWidth()
+                                                                                                .background(
+                                                                                                        if (isDarkTheme
+                                                                                                        )
+                                                                                                                Color.Black
+                                                                                                        else
+                                                                                                                Color.White
+                                                                                                )
+                                                                        ) {
+                                                                                val context =
+                                                                                        androidx.compose
+                                                                                                .ui
+                                                                                                .platform
+                                                                                                .LocalContext
+                                                                                                .current
+                                                                                val imageFile =
+                                                                                        java.io
+                                                                                                .File(
+                                                                                                        context.filesDir,
+                                                                                                        "thumbnails/tab_${tab.id}.jpg"
+                                                                                                )
+
+                                                                                if (imageFile
+                                                                                                .exists()
+                                                                                ) {
+                                                                                        coil.compose
+                                                                                                .AsyncImage(
+                                                                                                        model =
+                                                                                                                coil.request
+                                                                                                                        .ImageRequest
+                                                                                                                        .Builder(
+                                                                                                                                context
+                                                                                                                        )
+                                                                                                                        .data(
+                                                                                                                                imageFile
+                                                                                                                        )
+                                                                                                                        .crossfade(
+                                                                                                                                true
+                                                                                                                        )
+                                                                                                                        .build(),
+                                                                                                        contentDescription =
+                                                                                                                "Preview",
+                                                                                                        contentScale =
+                                                                                                                androidx.compose
+                                                                                                                        .ui
+                                                                                                                        .layout
+                                                                                                                        .ContentScale
+                                                                                                                        .Crop,
+                                                                                                        modifier =
+                                                                                                                Modifier.fillMaxSize(),
+                                                                                                        alignment =
+                                                                                                                Alignment
+                                                                                                                        .TopCenter
+                                                                                                )
+                                                                                } else {
+                                                                                        Box(
+                                                                                                modifier =
+                                                                                                        Modifier.fillMaxSize(),
+                                                                                                contentAlignment =
+                                                                                                        Alignment
+                                                                                                                .Center
+                                                                                        ) {
+                                                                                                Icon(
+                                                                                                        imageVector =
+                                                                                                                Icons.Default
+                                                                                                                        .Public,
+                                                                                                        contentDescription =
+                                                                                                                null,
+                                                                                                        tint =
+                                                                                                                mutedColor
+                                                                                                                        .copy(
+                                                                                                                                alpha =
+                                                                                                                                        0.5f
+                                                                                                                        ),
+                                                                                                        modifier =
+                                                                                                                Modifier.size(
+                                                                                                                        48.dp
+                                                                                                                )
+                                                                                                )
+                                                                                        }
                                                                                 }
                                                                         }
                                                                 }

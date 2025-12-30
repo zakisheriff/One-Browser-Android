@@ -92,6 +92,7 @@ class MainActivity : ComponentActivity() {
                         onSwipeNext = viewModel::switchToNextTab,
                         onSwipePrevious = viewModel::switchToPreviousTab,
                         onUpdateTab = viewModel::updateTab,
+                        onCaptureThumbnail = viewModel::updateThumbnail,
                         navigationActions = navigationActions,
                         modifier = Modifier.fillMaxSize().systemBarsPadding()
                 )

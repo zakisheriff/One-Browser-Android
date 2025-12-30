@@ -43,11 +43,26 @@ fun WebViewContainer(
                 kotlinx.coroutines.flow.SharedFlow<
                         com.oneatom.onebrowser.viewmodel.NavigationAction>? =
                 null,
+        onCaptureThumbnail: (Bitmap) -> Unit = {},
         modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val backgroundColor = if (isDarkTheme) DarkBackground else LightBackground
     val currentTabId = tab.id
+
+    // Helper to capture thumbnail
+    fun captureWebView(view: WebView) {
+        try {
+            if (view.width > 0 && view.height > 0) {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                val canvas = android.graphics.Canvas(bitmap)
+                view.draw(canvas)
+                onCaptureThumbnail(bitmap)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     // Remember webview for this tab
     val webView =
@@ -132,6 +147,8 @@ fun WebViewContainer(
                                     view?.let {
                                         onCanGoBackChanged(it.canGoBack())
                                         onCanGoForwardChanged(it.canGoForward())
+                                        // Capture thumbnail on finish
+                                        captureWebView(it)
                                     }
 
                                     // Inject theme CSS for internal pages
@@ -292,7 +309,13 @@ fun WebViewContainer(
     }
 
     // Properly destroy WebView when this composable is disposed
-    DisposableEffect(Unit) { onDispose { webView.destroy() } }
+    DisposableEffect(Unit) {
+        onDispose {
+            // Capture one last time before destroy
+            captureWebView(webView)
+            webView.destroy()
+        }
+    }
 
     Box(
             modifier =
