@@ -3,7 +3,11 @@ package com.oneatom.onebrowser.data
 import android.app.DownloadManager
 import android.content.Context
 import android.database.Cursor
+import android.net.Uri
+import android.os.Environment
 import android.text.format.Formatter
+import android.webkit.URLUtil
+import android.widget.Toast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -97,7 +101,8 @@ object DownloadTracker {
                                         DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR
                                 )
                         )
-                val uri = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
+                // COLUMN_URI is source URL, COLUMN_LOCAL_URI is file path
+                val uri = it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_URI))
                 val mediaType =
                         it.getString(it.getColumnIndexOrThrow(DownloadManager.COLUMN_MEDIA_TYPE))
 
@@ -169,5 +174,45 @@ object DownloadTracker {
             }
         }
         _downloads.value = newDownloads.sortedByDescending { it.id }
+    }
+
+    fun restartDownload(context: Context, download: DownloadStatus) {
+        // Remove old
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadManager.remove(download.id)
+
+        // Start new
+        if (download.uri != null) {
+            try {
+                val request = DownloadManager.Request(Uri.parse(download.uri))
+                if (download.mediaType != null) {
+                    request.setMimeType(download.mediaType)
+                }
+                request.setTitle(download.title)
+                request.setDescription("Downloading file...")
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+
+                // Re-guess filename or use existing title if valid filename
+                val filename =
+                        if (download.title.contains(".")) download.title
+                        else URLUtil.guessFileName(download.uri, null, download.mediaType)
+                // Clean filename to prevent .bin
+                val cleanFilename =
+                        if (filename.endsWith(".bin")) filename.replace(".bin", ".apk")
+                        else filename
+
+                request.setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS,
+                        cleanFilename
+                )
+
+                downloadManager.enqueue(request)
+                com.oneatom.onebrowser.services.DownloadService.start(context)
+                Toast.makeText(context, "Restarting download...", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to restart: ${e.message}", Toast.LENGTH_SHORT)
+                        .show()
+            }
+        }
     }
 }

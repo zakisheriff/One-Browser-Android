@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -253,8 +254,7 @@ fun DownloadItemView(
 
                 // Actions
                 if (item.status == DownloadManager.STATUS_RUNNING ||
-                                item.status == DownloadManager.STATUS_PENDING ||
-                                item.status == DownloadManager.STATUS_PAUSED
+                                item.status == DownloadManager.STATUS_PENDING
                 ) {
                         IconButton(onClick = onCancel) {
                                 Icon(
@@ -263,9 +263,26 @@ fun DownloadItemView(
                                         tint = textColor
                                 )
                         }
-                } else if (item.status == DownloadManager.STATUS_SUCCESSFUL ||
+                } else if (item.status == DownloadManager.STATUS_PAUSED ||
                                 item.status == DownloadManager.STATUS_FAILED
                 ) {
+                        // Resume / Retry Logic
+                        IconButton(onClick = { DownloadTracker.restartDownload(context, item) }) {
+                                Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Resume/Retry",
+                                        tint = textColor
+                                )
+                        }
+                        // Allow delete as well for failed/paused? Yes
+                        IconButton(onClick = onDelete) {
+                                Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = textColor
+                                )
+                        }
+                } else if (item.status == DownloadManager.STATUS_SUCCESSFUL) {
                         IconButton(onClick = onDelete) {
                                 Icon(
                                         imageVector = Icons.Default.Delete,
