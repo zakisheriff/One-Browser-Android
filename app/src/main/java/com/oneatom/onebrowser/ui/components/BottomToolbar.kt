@@ -9,7 +9,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -59,8 +58,6 @@ fun BottomToolbar(
         onSwipePrevious: () -> Unit,
         modifier: Modifier = Modifier
 ) {
-        val backgroundColor = if (isDarkTheme) DarkInputBackground else LightInputBackground
-        val borderColor = if (isDarkTheme) DarkBorder else LightBorder
         val textColor = if (isDarkTheme) DarkText else LightText
         val mutedColor = if (isDarkTheme) DarkMuted else LightMuted
 
@@ -293,11 +290,16 @@ private fun CircleIconButton(
         Box(
                 modifier =
                         Modifier.size(44.dp)
-                                .clip(CircleShape)
+                                .clip(
+                                        androidx.compose.foundation.shape.CircleShape
+                                ) // Fully Circular
                                 .background(
-                                        if (isDarkTheme) Color.Black.copy(alpha = 0.2f)
-                                        else Color.White.copy(alpha = 0.2f)
-                                ) // Subtle glass
+                                        if (isDarkTheme)
+                                                Color.White.copy(
+                                                        alpha = 0.15f
+                                                ) // More visible glass
+                                        else Color.Black.copy(alpha = 0.08f)
+                                )
                                 .clickable(enabled = enabled, onClick = onClick),
                 contentAlignment = Alignment.Center
         ) {
@@ -305,7 +307,7 @@ private fun CircleIconButton(
                         imageVector = icon,
                         contentDescription = contentDescription,
                         tint = if (enabled) iconColor else disabledColor.copy(alpha = 0.4f),
-                        modifier = Modifier.size(24.dp) // Slightly larger icon for visibility
+                        modifier = Modifier.size(24.dp)
                 )
         }
 }
