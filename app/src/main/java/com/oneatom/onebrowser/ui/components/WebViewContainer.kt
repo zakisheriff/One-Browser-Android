@@ -123,7 +123,17 @@ fun WebViewContainer(
                     }
 
                     // Javascript Interface
-                    addJavascriptInterface(OneBrowserJsInterface(context), "OneBrowser")
+                    // Javascript Interface
+                    addJavascriptInterface(
+                            OneBrowserJsInterface(
+                                    onNavigate = { url ->
+                                        onNavigate(url)
+                                    }, // Wrap if needed or pass directly if signature matches
+                                    onOpenSettings = { onOpenSettings() },
+                                    getTheme = { if (isDarkTheme) "dark" else "light" }
+                            ),
+                            "OneBrowser"
+                    )
                     addJavascriptInterface(
                             object {
                                 @android.webkit.JavascriptInterface
