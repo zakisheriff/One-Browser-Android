@@ -78,6 +78,9 @@ fun WebViewContainer(
     var duration by remember { mutableFloatStateOf(0f) }
     var title by remember { mutableStateOf("") }
 
+    // Context Menu State
+    var contextMenuUri by remember { mutableStateOf<String?>(null) }
+
     // Helper to capture thumbnail
     fun captureWebView(view: WebView) {
         try {
@@ -236,6 +239,24 @@ fun WebViewContainer(
                                 }
                             }
 
+                    setOnLongClickListener { view ->
+                        val result = (view as WebView).hitTestResult
+                        // Check for image or image link
+                        if (result.type == WebView.HitTestResult.IMAGE_TYPE ||
+                                        result.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+                        ) {
+                            val url = result.extra
+                            if (url != null) {
+                                contextMenuUri = url
+                                true // Consume event
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    }
+
                     setDownloadListener {
                             url,
                             userAgent,
@@ -253,7 +274,7 @@ fun WebViewContainer(
                             )
                             request.allowScanningByMediaScanner()
                             request.setNotificationVisibility(
-                                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                                    DownloadManager.Request.VISIBILITY_HIDDEN
                             )
                             request.setDestinationInExternalPublicDir(
                                     android.os.Environment.DIRECTORY_DOWNLOADS,
@@ -265,6 +286,10 @@ fun WebViewContainer(
                                     ) as
                                             DownloadManager
                             dm.enqueue(request)
+
+                            // Start Custom Service
+                            com.oneatom.onebrowser.services.DownloadService.start(context)
+
                             android.widget.Toast.makeText(
                                             context,
                                             "Downloading...",
@@ -645,6 +670,119 @@ fun WebViewContainer(
                                                         .SCREEN_ORIENTATION_LANDSCAPE
                                 activity.requestedOrientation = requestedOrientation
                             }
+                        }
+                )
+            }
+        }
+
+        // Context Menu
+        if (contextMenuUri != null) {
+            androidx.compose.material3.DropdownMenu(
+                    expanded = true,
+                    onDismissRequest = { contextMenuUri = null },
+                    modifier = Modifier.background(backgroundColor)
+            ) {
+                androidx.compose.material3.DropdownMenuItem(
+                        text = {
+                            androidx.compose.material3.Text(
+                                    "Download Image",
+                                    color =
+                                            if (isDarkTheme)
+                                                    com.oneatom.onebrowser.ui.theme.DarkText
+                                            else com.oneatom.onebrowser.ui.theme.LightText
+                            )
+                        },
+                        onClick = {
+                            val url = contextMenuUri!!
+                            // Trigger Download with Advanced Tracker
+                            try {
+                                val request = DownloadManager.Request(Uri.parse(url))
+                                request.setNotificationVisibility(
+                                        DownloadManager.Request.VISIBILITY_HIDDEN
+                                )
+                                request.setDestinationInExternalPublicDir(
+                                        Environment.DIRECTORY_DOWNLOADS,
+                                        URLUtil.guessFileName(url, null, "image/*")
+                                )
+                                val dm =
+                                        context.getSystemService(Context.DOWNLOAD_SERVICE) as
+                                                DownloadManager
+                                dm.enqueue(request)
+
+                                // Start Custom Notification Service
+                                com.oneatom.onebrowser.services.DownloadService.start(context)
+                                Toast.makeText(context, "Downloading...", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Failed: ${e.message}", Toast.LENGTH_SHORT)
+                                        .show()
+                            }
+                            contextMenuUri = null
+                        }
+                )
+                androidx.compose.material3.DropdownMenuItem(
+                        text = {
+                            androidx.compose.material3.Text(
+                                    "Open in New Tab",
+                                    color =
+                                            if (isDarkTheme)
+                                                    com.oneatom.onebrowser.ui.theme.DarkText
+                                            else com.oneatom.onebrowser.ui.theme.LightText
+                            )
+                        },
+                        onClick = {
+                            onNavigate(contextMenuUri!!)
+                            contextMenuUri = null
+                        }
+                )
+                androidx.compose.material3.DropdownMenuItem(
+                        text = {
+                            androidx.compose.material3.Text(
+                                    "Copy Image Address",
+                                    color =
+                                            if (isDarkTheme)
+                                                    com.oneatom.onebrowser.ui.theme.DarkText
+                                            else com.oneatom.onebrowser.ui.theme.LightText
+                            )
+                        },
+                        onClick = {
+                            val clipboard =
+                                    context.getSystemService(Context.CLIPBOARD_SERVICE) as
+                                            android.content.ClipboardManager
+                            val clip =
+                                    android.content.ClipData.newPlainText(
+                                            "Image URL",
+                                            contextMenuUri
+                                    )
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT)
+                                    .show()
+                            contextMenuUri = null
+                        }
+                )
+                androidx.compose.material3.DropdownMenuItem(
+                        text = {
+                            androidx.compose.material3.Text(
+                                    "Share Image",
+                                    color =
+                                            if (isDarkTheme)
+                                                    com.oneatom.onebrowser.ui.theme.DarkText
+                                            else com.oneatom.onebrowser.ui.theme.LightText
+                            )
+                        },
+                        onClick = {
+                            val intent =
+                                    android.content.Intent(android.content.Intent.ACTION_SEND)
+                                            .apply {
+                                                type = "text/plain"
+                                                putExtra(
+                                                        android.content.Intent.EXTRA_TEXT,
+                                                        contextMenuUri
+                                                )
+                                            }
+                            context.startActivity(
+                                    android.content.Intent.createChooser(intent, "Share Image Link")
+                            )
+                            contextMenuUri = null
                         }
                 )
             }
